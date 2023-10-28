@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 
 
 const HomeScreen = ({ navigation }) => {
@@ -39,37 +39,26 @@ const HomeScreen = ({ navigation }) => {
 
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const devicesRef = collection(db, "devices");
-        const devicesQuery = query(devicesRef, where("propietary_id", "==", user.uid));
-        const devicesQuerySnapshot = await getDocs(devicesQuery);
-  
-        if (devicesQuerySnapshot.size > 0) {
-          const deviceData = [];
-          devicesQuerySnapshot.forEach((doc) => {
-            const data = doc.data();
-            deviceData.push(data);
-          });
-          // Agrega un elemento nulo al final del array
-          deviceData.push(null);
-          setDevices(deviceData);
-          //console.log("Datos de dispositivos:", deviceData);   ------    Testear que datos se estan enviando
-        } else {
-          // Agrega un elemento nulo si no hay dispositivos
-          setDevices([null]);
-          console.log("No se pueden obtener datos");
-        }
-      } catch (error) {
-        console.log("Error recopilando datos y mostrándolos" + error);
-      }
+    const devicesRef = collection(db, "devices");
+    const devicesQuery = query(devicesRef, where("propietary_id", "==", user.uid));
+
+    // Establecer la suscripción en tiempo real a la colección "devices"
+    const unsubscribe = onSnapshot(devicesQuery, (snapshot) => {
+      const updatedDevices = [];
+      snapshot.forEach((doc) => {
+        updatedDevices.push(doc.data());
+      });
+      updatedDevices.push(null);
+      setDevices(updatedDevices);
+    });
+
+    return () => {
+      // Cancelar la suscripción cuando se desmonte la pantalla
+      unsubscribe();
     };
-  
-    fetchData();
   }, [user]);
 
   const handleDeviceSelect = (device) => {
-    // Navegar a la pantalla de detalles y pasar los datos del dispositivo seleccionado
     navigation.navigate('DeviceDetail', { device });
   };
   
@@ -231,7 +220,6 @@ const styles = StyleSheet.create({
   },
   addButton: {
     alignSelf: 'center',
-    padding: 10,
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -263,8 +251,8 @@ const styles = StyleSheet.create({
     marginLeft:20,
     padding:30,
     alignItems: 'center',
-    width: 100,
-    height: 100,
+    width: 70,
+    height: 70,
   },
   buttonText:{
     color: '#fff',

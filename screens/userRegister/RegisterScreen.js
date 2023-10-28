@@ -122,6 +122,19 @@ const RegisterScreen = () => {
       return;
     }
 
+    if (password.length < 6) {
+      // La contraseña no cumple con los requisitos de contener al menos una mayúscula,
+      // un dígito y uno de los caracteres especiales: !@#$%^&*
+      setError('La contraseña debe tener mas de 6 caracteres');
+      return;
+    } else if (!/(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*-_,.?¿!¡/()=])/.test(password)) {
+      // La contraseña no cumple con los requisitos de contener al menos una mayúscula,
+      // un dígito y uno de los caracteres especiales: !@#$%^&*
+      setError('La contraseña debe tener al menos una mayúscula, un dato numérico y un caracter especial');
+      return;
+    }
+    
+
     try {
       setModalVisible(true);
 
@@ -154,8 +167,12 @@ const RegisterScreen = () => {
         setError('El correo electrónico ya está registrado en otra cuenta.');
         setModalVisible(false)
 
+
+      } else if (error.code === "auth/weak-password") {
+        setError('La contraseña es muy corta, debe tener al menos 6 caracteres');
+        setModalVisible(false)
       } else {
-        setError('Error al crear el usuario. Por favor, inténtalo de nuevo.');
+        setError('Se presento un error en el registro');
         setModalVisible(false)
       }
       console.error("Error al crear el usuario:", error);
@@ -173,7 +190,7 @@ const RegisterScreen = () => {
     }
     setFirstName(text);
   };
-  
+
   const onChangeSecondName = (text) => {
     // Verificar si el valor contiene números
     if (/\d/.test(text)) {
@@ -183,7 +200,7 @@ const RegisterScreen = () => {
     }
     setSecondName(text);
   };
-  
+
   const onChangeSurname = (text) => {
     // Verificar si el valor contiene números
     if (/\d/.test(text)) {
@@ -193,7 +210,7 @@ const RegisterScreen = () => {
     }
     setSurname(text);
   };
-  
+
   const onChangeSecondSurname = (text) => {
     // Verificar si el valor contiene números
     if (/\d/.test(text)) {
@@ -210,17 +227,17 @@ const RegisterScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : null}
     >
       <ScrollView style={styles.lowerSection} contentContainerStyle={styles.scrollContent}>
-      {/* Sección superior con espacio para imagen y texto */}
-      <View style={styles.upperSection}>
-        <Image
-          source={require('../../images/logoCriserLogin.png')}
-          style={styles.logo}
-        />
-        <Text style={styles.welcomeText}>¡Todo sea por tu mascota!</Text>
-      </View>
+        {/* Sección superior con espacio para imagen y texto */}
+        <View style={styles.upperSection}>
+          <Image
+            source={require('../../images/logoCriserLogin.png')}
+            style={styles.logo}
+          />
+          <Text style={styles.welcomeText}>¡Todo sea por tu mascota!</Text>
+        </View>
 
-      {/* Sección inferior con formulario */}
-      
+        {/* Sección inferior con formulario */}
+
         <ImageBackground
           source={require('../../images/fondoLogin.png')}
           style={styles.imagenFondo}
