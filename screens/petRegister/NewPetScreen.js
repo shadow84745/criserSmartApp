@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, TextInput, ActivityIndicator } from 'react-native';
 import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { Picker } from '@react-native-picker/picker';
 
 
 let IDdispositivoregistrado = null;
@@ -15,14 +15,24 @@ let IDdispositivoregistrado = null;
 
 const NewPetScreen = () => {
 
-  const [deviceSerial, setDeviceSerial] = useState("");
-  const [idDevice, setIdDevice] = useState("");
-  const [deviceName, setDeviceName] = useState("");
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [nombreCan, setNombreCan] = useState('');
+  const [edadCan, setEdadCan] = useState('');
+  const [pesoCan, setPesoCan] = useState('');
+  const [tamañoCan, setTamañoCan] = useState('');
+  const [actividadFisica, setActividadFisica] = useState('');
+  const [condicionesSalud, setCondicionesSalud] = useState('');
+  const [marcaComida, setMarcaComida] = useState('');
+  const [tipoComida, setTipoComida] = useState('');
+  const [cccCalificacion, setCccCalificacion] = useState('Seleccionar'); // Nuevo estado
+
+
   const [isButtonVisible, setIsButtonVisible] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
+  const [cccModalVisible, setCccModalVisible] = useState(false); // Nuevo estado para el modal CCC
+  const [modalTipo, setModalTipo] = useState(''); // Nuevo estado para controlar qué modal se muestra
 
 
 
@@ -34,7 +44,11 @@ const NewPetScreen = () => {
     persistence: getReactNativePersistence(AsyncStorage)
   });
 
-  const handleRegisterDispenser = async () => {
+  const modalInfo = () =>{
+    setCccModalVisible(true);
+  };
+
+  const handleRegisterPet = async () => {
     // Validaciones
     if (idDevice.length !== 15 || idDevice.includes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'ñ', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'x', 'y', 'z', 'w')) {
       setError('El ID del dispositivo es erroneo');
@@ -74,30 +88,30 @@ const NewPetScreen = () => {
         // Ya existe un documento en la colección activeDevices con este idDevice, puedes continuar con el registro
         if (registeredDevicesQuerySnapshot.size != 0) {
           if (devicesQuerySnapshot.size == 0) {
-          // Ya existe un documento en la colección registeredDevices con este deviceSerial, muestra un mensaje de error
-          const docRef = await addDoc(collection(db, "devices"), {
-            device_name: deviceName,
-            id_device: idDevice,
-            serial_device: deviceSerial,
-            propietary_id: user.uid,
-          });
+            // Ya existe un documento en la colección registeredDevices con este deviceSerial, muestra un mensaje de error
+            const docRef = await addDoc(collection(db, "devices"), {
+              device_name: deviceName,
+              id_device: idDevice,
+              serial_device: deviceSerial,
+              propietary_id: user.uid,
+            });
 
-          console.log("Dispositivo registrado exitosamente");
-          console.log("Dispositivo registrado con el ID: ", docRef.id);
+            console.log("Dispositivo registrado exitosamente");
+            console.log("Dispositivo registrado con el ID: ", docRef.id);
 
-          IDdispositivoregistrado = docRef.id;
+            IDdispositivoregistrado = docRef.id;
 
-          setIsButtonVisible(false);
-          setModalVisible(false);
-          setError('');
-          setSuccessMessage('Dispositivo registrado con éxito');
+            setIsButtonVisible(false);
+            setModalVisible(false);
+            setError('');
+            setSuccessMessage('Dispositivo registrado con éxito');
 
-          setTimeout(() => {
-            setSuccessMessage('');
-            navigation.navigate('ConnectionDispenser');
-          }, 3000);
-          setModalVisible(false);
-          }else{
+            setTimeout(() => {
+              setSuccessMessage('');
+              navigation.navigate('ConnectionDispenser');
+            }, 3000);
+            setModalVisible(false);
+          } else {
             setModalVisible(false);
             setError('El ID del dispositivo ya esta siendo usado');
           }
@@ -115,6 +129,16 @@ const NewPetScreen = () => {
     }
   };
 
+  const pickerRef = useRef();
+
+  function open() {
+    pickerRef.current.focus();
+  }
+
+  function close() {
+    pickerRef.current.blur();
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -126,76 +150,153 @@ const NewPetScreen = () => {
             <Image source={require('../../images/hamburgerIcon.png')} style={styles.menuIcon} />
           </TouchableOpacity>
         </View>
+        <View style={styles.sectionTitle}>
+          <Text style={styles.sectionTitleText}>Registra un nuevo canino</Text>
+        </View>
+        <View style={styles.section}>
+
+          <View style={styles.inputContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.descriptionInput}>Nombre del can</Text>
+              <TextInput
+                style={styles.input}
+                value={nombreCan}
+                onChangeText={text => setNombreCan(text)}
+                maxLength={15}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.descriptionInput}>Edad del can</Text>
+              <TextInput
+                style={styles.input}
+                value={edadCan}
+                keyboardType="numeric"
+                onChangeText={text => setEdadCan(text)}
+                maxLength={2}
+              />
+            </View>
+          </View>
+        </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionTitle}>
-            <Text style={styles.sectionTitleText}>Registra un nuevo canino</Text>
-          </View>
-          <View style={styles.sectionCarrusel}>
-            <View style={styles.titleContainer}>
-              <Text style={styles.descriptionInput}>Ingresa el serial del dispositivo</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.descriptionInput}>Calificación de la condición corporal (CCC)</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Picker
+                selectedValue={cccCalificacion}
+                onValueChange={(itemValue, itemIndex) => setCccCalificacion(itemValue)}
+                style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
+              >
+                <Picker.Item label="Seleccionar" value="Seleccionar" />
+                <Picker.Item label="1" value="1" />
+                <Picker.Item label="2" value="2" />
+                <Picker.Item label="3" value="3" />
+                <Picker.Item label="4" value="4" />
+                <Picker.Item label="5" value="5" />
+                <Picker.Item label="6" value="6" />
+                <Picker.Item label="7" value="7" />
+                <Picker.Item label="8" value="8" />
+                <Picker.Item label="9" value="9" />
+              </Picker>
+              <TouchableOpacity onPress={modalInfo} > 
+              <Image source={require('../../images/infoImage.png')} style={styles.infoIcon} />
+              </TouchableOpacity>
             </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.descriptionInput}>Peso(KG)</Text>
             <TextInput
               style={styles.input}
-              maxLength={15}
-              value={deviceSerial}
+              value={pesoCan}
               keyboardType="numeric"
-              onChangeText={text => setDeviceSerial(text)}
+              onChangeText={text => setPesoCan(text)}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.descriptionInput}>Tamaño</Text>
+            <TextInput
+              style={styles.input}
+              value={tamañoCan}
+              onChangeText={text => setTamañoCan(text)}
             />
           </View>
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionCarrusel}>
-            <View style={styles.titleContainer}>
-              <Text style={styles.descriptionInput}>Ingresa el ID de tu dispositivo</Text>
-            </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.descriptionInput}>Actividad Física</Text>
+            <Picker
+              ref={pickerRef}
+              selectedValue={actividadFisica}
+              onValueChange={(itemValue, itemIndex) => setActividadFisica(itemValue)}
+              style={styles.input}
+            >
+              <Picker.Item label="Seleccionar" value="default" />
+              <Picker.Item label="Vida Activa" value="activa" />
+              <Picker.Item label="Sedentaria" value="sedentaria" />
+              {/* Agrega más opciones según tus necesidades */}
+            </Picker>
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.descriptionInput}>Condiciones de Salud</Text>
             <TextInput
               style={styles.input}
-              maxLength={15}
-              value={idDevice}
-              keyboardType="numeric"
-              onChangeText={text => setIdDevice(text)}
+              value={condicionesSalud}
+              onChangeText={text => setCondicionesSalud(text)}
             />
           </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionCarrusel}>
-            <View style={styles.titleContainer}>
-              <Text style={styles.descriptionInput}>Ingresa un nombre personalizado para tu dispositivo</Text>
-            </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.descriptionInput}>Marca de Comida</Text>
+            <Picker
+              ref={pickerRef}
+              selectedValue={marcaComida}
+              onValueChange={(itemValue, itemIndex) => setMarcaComida(itemValue)}
+              style={styles.input}
+            >
+              <Picker.Item label="Seleccionar" value="default" />
+              <Picker.Item label="Chunky" value="chunky" />
+              <Picker.Item label="Dogourmet" value="dogourmet" />
+              <Picker.Item label="Dog Chow" value="dog chow" />
+              {/* Agrega más opciones según tus necesidades */}
+            </Picker>
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.descriptionInput}>Tipo</Text>
             <TextInput
               style={styles.input}
-              maxLength={30}
-              value={deviceName}
-              onChangeText={text => setDeviceName(text)}
+              value={tipoComida}
+              onChangeText={text => setTipoComida(text)}
             />
           </View>
         </View>
 
         <View style={styles.buttonContainer}>
           {isButtonVisible && (
-
-
-            <TouchableOpacity
-              onPress={handleRegisterDispenser}
-              style={styles.button}
-            >
-              <Text style={styles.buttonText}>Iniciar Conexion</Text>
+            <TouchableOpacity onPress={handleRegisterPet} style={styles.button}>
+              <Text style={styles.buttonText}>Continuar</Text>
             </TouchableOpacity>
           )}
         </View>
-        <Modal
-          animationType='fade'
-          transparent={true}
-          visible={modalVisible}
-        >
+        <Modal animationType='fade' transparent={true} visible={modalVisible}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <ActivityIndicator size="large" color="#00B5E2" />
               <Text style={styles.modalText}>Realizando registro...</Text>
             </View>
+          </View>
+        </Modal>
+        <Modal
+          visible={cccModalVisible}
+          transparent={true}
+          animationType="slide"
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalText}>¿Que es la calificacion de la condicion corporal (CCC)?</Text>
+            <Image source={require('../../images/perroSalud.png')} style={styles.imagenCCC} />
+            <TouchableOpacity onPress={() => setCccModalVisible(false)} style={styles.closeButton}>
+              <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
+            </TouchableOpacity>
           </View>
         </Modal>
         <View>
@@ -283,7 +384,7 @@ const styles = StyleSheet.create({
   },
   smartHomeImages: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space between',
     marginTop: 20,
   },
   smartHomeImage: {
@@ -301,20 +402,20 @@ const styles = StyleSheet.create({
     color: '#00B5E2',
   },
   buttonContainer: {
-    alignItems: 'flex-end',
-    marginTop: 10,
-    marginRight: 25,
+    alignItems: 'center',
+    marginTop: 20,
   },
   button: {
     backgroundColor: '#00B5E2',
     paddingVertical: 10,
     paddingHorizontal: 40,
     borderRadius: 5,
-    borderColor: '#000',
-    borderWidth: 1,
   },
   buttonText: {
     color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   errorText: {
     color: 'red',
@@ -332,7 +433,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    paddingHorizontal:10,
   },
   modalContent: {
     backgroundColor: '#FFF',
@@ -345,6 +447,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,
+    color: '#fff',
   },
   modalCloseButton: {
     fontSize: 16,
@@ -353,4 +456,41 @@ const styles = StyleSheet.create({
     color: '#00B5E2',
     marginTop: 10,
   },
+  inputSection: {
+    width: '50%',
+    padding: 5,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  section: {
+    backgroundColor: "#595959",
+    paddingHorizontal: 30,
+    paddingVertical: 20,
+    marginVertical: 5,
+  },
+  infoIcon: {
+    width: 20,
+    height: 20,
+    marginLeft: 10, // Espacio entre el botón y el ícono
+  },
+  selectorInput: {
+    backgroundColor: '#FFF',
+    color: '#000',
+    marginBottom: 10,
+    padding: 10,
+    flex: 1,
+  },
+  imagenCCC: {
+    width: 410, // Ajusta el ancho según tus necesidades
+    height: 430, // Ajusta el alto según tus necesidades
+    resizeMode: 'cover', // Ajusta el modo de redimensionamiento
+    marginLeft: -10,
+  },
+  closeIcon:{
+    width: 50,
+    height: 50,
+  }
 });
