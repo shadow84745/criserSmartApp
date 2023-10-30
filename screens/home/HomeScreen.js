@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, BackHandler, Modal } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig, db } from '../../firebaseConfig';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = () => {
+
+  const navigation = useNavigation();
+  const isFocused = useIsFocused();
   
 
   const app = initializeApp(firebaseConfig);
@@ -26,6 +29,8 @@ const HomeScreen = ({ navigation }) => {
   const [userData, setUserData] = useState({}); // Almacena los datos del usuario desde Firestore
   const user = auth.currentUser;
   const [devices, setDevices] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+
 
 
   const pets = [
@@ -37,8 +42,23 @@ const HomeScreen = ({ navigation }) => {
   ];
 
 
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isFocused) {
+        setModalVisible(true);
+        return true; // Evita que el botón de retroceso cierre la aplicación
+      }
+      return false;
+    });
+
+    return () => {
+      backHandler.remove();
+    };
+  }, [isFocused]);
 
   useEffect(() => {
+    
+
     const devicesRef = collection(db, "devices");
     const devicesQuery = query(devicesRef, where("propietary_id", "==", user.uid));
 
@@ -52,11 +72,18 @@ const HomeScreen = ({ navigation }) => {
       setDevices(updatedDevices);
     });
 
-    return () => {
-      // Cancelar la suscripción cuando se desmonte la pantalla
+    
+
+    return () => {      // Cancelar la suscripción cuando se desmonte la pantalla
       unsubscribe();
     };
   }, [user]);
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
+
 
   const handleDeviceSelect = (device) => {
     navigation.navigate('DeviceDetail', { device });
@@ -83,8 +110,15 @@ const HomeScreen = ({ navigation }) => {
       );
     }
   };
-  
 
+  const handleSignOut = () => {
+    auth
+        .signOut()
+        .then(() => {
+            navigation.replace('Login');
+        })
+        .catch((error) => alert(error.message));
+};
 
 
 
@@ -175,6 +209,30 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>¿Está seguro de que desea salir?</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={closeModal}
+            >
+              <Text style={styles.modalButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalButtonExit}
+              onPress={handleSignOut}
+            >
+              <Text style={styles.modalButtonText}>Salir</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -258,5 +316,41 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 20,
-  }
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    width: 300,
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalText: {
+    fontSize: 20,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalButton: {
+    backgroundColor: '#00B5E2',
+    width: 100,
+    padding: 10,
+    borderRadius: 5,
+    margin: 10,
+  },
+  modalButtonText: {
+    color: '#fff',
+    textAlign: 'center',
+  },
+  modalButtonExit: {
+    backgroundColor: 'red',
+    width: 100,
+    padding: 10,
+    borderRadius: 5,
+    margin: 10,
+  },
 });

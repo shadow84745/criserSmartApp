@@ -26,8 +26,8 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false}} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false}} />
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false, unmountOnBlur: true}} />
         <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false}} />
         <Stack.Screen name="Method" component={MethodScreen} options={{ headerShown: false}} />
         <Stack.Screen name="EmailMethod" component={EmailMethodScreen} options={{ headerShown: false}} />

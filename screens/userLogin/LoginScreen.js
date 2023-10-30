@@ -14,7 +14,7 @@ const LoginScreen = () => {
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [loginError, setLoginError] = useState('');
-    const [modalVisible, setModalVisible] = useState(false);
+    const [modalVisibleCharge, setModalVisibleCharge] = useState(false);
 
     const navigation = useNavigation();
 
@@ -66,22 +66,22 @@ const LoginScreen = () => {
 
     const handleLoginAcount = () => {
         if (handleValidation()) {
-            setModalVisible(true)
+            setModalVisibleCharge(true)
             signInWithEmailAndPassword(auth, email.toLowerCase(), password)
                 .then((userCredential) => {
                     console.log("Usuario logeado exitosamente");
                     const user = userCredential.user;
                     console.log(user);
-                    setModalVisible(false);
+                    setModalVisibleCharge(false);
                 })
                 .catch(error => {
                     const errorCode = error.code;
                     if (errorCode === 'auth/wrong-password') {
                         setLoginError('Contraseña incorrecta');
-                        setModalVisible(false);
+                        setModalVisibleCharge(false);
                     } else {
                         setLoginError('Ocurrió un error al iniciar sesión');
-                        setModalVisible(false);
+                        setModalVisibleCharge(false);
                     }
                 });
         }
@@ -138,7 +138,7 @@ const LoginScreen = () => {
                     <Modal
                         animationType='fade'
                         transparent={true}
-                        visible={modalVisible}
+                        visible={modalVisibleCharge}
                     >
                         <View style={styles.modalContainer}>
                             <View style={styles.modalContent}>

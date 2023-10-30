@@ -1,10 +1,12 @@
-import React, { useRef, useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, TextInput, ActivityIndicator } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, TextInput, ActivityIndicator, Pressable } from 'react-native';
 import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import RNDateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
@@ -25,12 +27,18 @@ const NewPetScreen = () => {
   const [tipoComida, setTipoComida] = useState('');
   const [cccCalificacion, setCccCalificacion] = useState('Seleccionar'); // Nuevo estado
   const [etapa, setEtapa] = useState('Seleccionar'); // Nuevo estado
+  const [dateOfBirth, setDateOfBirth] = useState('');
+
 
 
   const [isButtonVisible, setIsButtonVisible] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
+  const [date, setDate] = useState(new Date());
+
+
 
   const [cccModalVisible, setCccModalVisible] = useState(false); // Nuevo estado para el modal CCC
   const [modalTamaño, setModalTamaño] = useState(''); // Nuevo estado para controlar qué modal se muestra
@@ -58,10 +66,68 @@ const NewPetScreen = () => {
     setModalEtapa(true);
   };
 
+  const toggleDatePicker = () => {
+    setShowPicker(!showPicker);
+  };
+
+  const formatDate = (rawDate) => {
+    let date = new Date(rawDate);
+
+    let year = date.getFullYear();
+    let month = date.getMonth() + 1;
+    let day = date.getDate();
+
+    month = month < 10 ? `0${month}` : month;
+    day = day < 10 ? `0${day}` : day;
+
+    return `${day} - ${month} -${year}`;
+  }
+
+  const onChange = ({ type }, selectedDate) => {
+    if (type == "set") {
+      const currentDate = selectedDate;
+      setDate(currentDate);
+      if (Platform.OS === "android") {
+        toggleDatePicker();
+        setDateOfBirth(formatDate(currentDate));
+      }
+
+    } else {
+      toggleDatePicker();
+    }
+  };
+
+
+  useEffect(() => {
+    if (dateOfBirth) {
+      // Dividir la fecha de nacimiento en día, mes y año
+      const parts = dateOfBirth.split('-').map(part => parseInt(part.trim(), 10));
+
+      // Verificar que haya tres partes (día, mes, año) y que todas sean números válidos
+      if (parts.length === 3 && !parts.includes(NaN)) {
+        const day = parts[0];
+        const month = parts[1];
+        const year = parts[2];
+
+        // Crear un objeto Date con la fecha de nacimiento
+        const dob = new Date(year, month - 1, day);
+        const today = new Date();
+        const ageDiff = today - dob;
+        const ageDate = new Date(ageDiff);
+        const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970);
+        
+      } else {
+        setError('Formato de fecha de nacimiento no válido. Utiliza DD-MM-YYYY.');
+        edadCan('');
+      }
+    }
+  }, [dateOfBirth]);
+
+
   const handleRegisterPet = async () => {
     // Validaciones
-    if (idDevice.length !== 15 || idDevice.includes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'ñ', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'x', 'y', 'z', 'w')) {
-      setError('El ID del dispositivo es erroneo');
+    if (pesoCan < 1 || pesoCan.includes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'ñ', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'x', 'y', 'z', 'w')) {
+      setError('El peso del can no es valido');
       return;
     }
 
@@ -99,22 +165,26 @@ const NewPetScreen = () => {
         if (registeredDevicesQuerySnapshot.size != 0) {
           if (devicesQuerySnapshot.size == 0) {
             // Ya existe un documento en la colección registeredDevices con este deviceSerial, muestra un mensaje de error
-            const docRef = await addDoc(collection(db, "devices"), {
-              device_name: deviceName,
-              id_device: idDevice,
-              serial_device: deviceSerial,
+            const docRef = await addDoc(collection(db, "dogs"), {
+              dog_name: nombreCan,
+              dog_ccc: cccCalificacion,
+              dog_size: tamañoCan,
+              dog_stage: etapa,
+              dog_weight: pesoCan,
+              dog_activity: actividadFisica,
+              dog_healthy_conditions: condicionesSalud,
               propietary_id: user.uid,
             });
 
-            console.log("Dispositivo registrado exitosamente");
-            console.log("Dispositivo registrado con el ID: ", docRef.id);
+            console.log("Mascota registrada exitosamente");
+            console.log("Mascota registrado con el ID: ", docRef.id);
 
             IDdispositivoregistrado = docRef.id;
 
             setIsButtonVisible(false);
             setModalVisible(false);
             setError('');
-            setSuccessMessage('Dispositivo registrado con éxito');
+            setSuccessMessage('Mascota registrada con éxito');
 
             setTimeout(() => {
               setSuccessMessage('');
@@ -148,6 +218,22 @@ const NewPetScreen = () => {
   function close() {
     pickerRef.current.blur();
   }
+
+  const [tiposComida, setTiposComida] = useState([]);
+  const [tiposComidaFiltrados, setTiposComidaFiltrados] = useState([]);
+
+
+  const obtenerTiposComida = async (marcaComida) => {
+    const dogFoodRef = collection(db, "dog_food");
+    const dogQuery = query(dogFoodRef, where("marca", "==", marcaComida));
+    const querySnapshot = await getDocs(dogQuery);
+
+    const nombres = querySnapshot.docs.map(doc => doc.data().nombre);
+
+    setTiposComidaFiltrados(nombres);
+  };
+
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -185,6 +271,27 @@ const NewPetScreen = () => {
                 maxLength={2}
               />
             </View>
+            {showPicker && (
+              <RNDateTimePicker
+                mode="date"
+                display="spinner"
+                value={date}
+                onChange={onChange}
+                locale="es-ES"
+              />
+            )}
+            {!showPicker && (
+              <Pressable onPress={toggleDatePicker}>
+                <TextInput
+                  placeholder="Fecha de Nacimiento (YYYY-MM-DD)"
+                  value={dateOfBirth}
+                  onChangeText={setDateOfBirth}
+                  style={styles.input}
+                  editable={false}
+                />
+              </Pressable>
+            )}
+
           </View>
         </View>
 
@@ -281,34 +388,57 @@ const NewPetScreen = () => {
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.descriptionInput}>Condiciones de Salud</Text>
-            <TextInput
+            <Picker
+              ref={pickerRef}
+              selectedValue={condicionesSalud}
+              onValueChange={(itemValue, itemIndex) => setCondicionesSalud(itemValue)}
               style={styles.input}
-              value={condicionesSalud}
-              onChangeText={text => setCondicionesSalud(text)}
-            />
+            >
+              <Picker.Item label="Seleccionar" value="default" />
+              <Picker.Item label="Enfermedad Renal" value="renal" />
+              <Picker.Item label="Problemas de Pancreatilis" value="pancreatilis" />
+              <Picker.Item label="Diabetes" value="diabetes" />
+              <Picker.Item label="Tirodes" value="tiroides" />
+              <Picker.Item label="Enfermedad Hepatica" value="hepatica" />
+              <Picker.Item label="Alergias Alimentarias" value="alergias_alimentarias" />
+              <Picker.Item label="Estreñimiento" value="estreñimiento" />
+              <Picker.Item label="Problemas Cardiacos" value="cardiacos" />
+              <Picker.Item label="Enfermedades Articulares" value="articulares" />
+              <Picker.Item label="Enfermedades en la Piel" value="piel" />
+              {/* Agrega más opciones según tus necesidades */}
+            </Picker>
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.descriptionInput}>Marca de Comida</Text>
             <Picker
               ref={pickerRef}
               selectedValue={marcaComida}
-              onValueChange={(itemValue, itemIndex) => setMarcaComida(itemValue)}
+              onValueChange={(itemValue, itemIndex) => {
+                setMarcaComida(itemValue);
+                obtenerTiposComida(itemValue);
+              }}
               style={styles.input}
             >
               <Picker.Item label="Seleccionar" value="default" />
               <Picker.Item label="Chunky" value="chunky" />
               <Picker.Item label="Dogourmet" value="dogourmet" />
-              <Picker.Item label="Dog Chow" value="dog chow" />
+              <Picker.Item label="Dog Chow" value="dogchow" />
               {/* Agrega más opciones según tus necesidades */}
             </Picker>
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.descriptionInput}>Tipo</Text>
-            <TextInput
+            <Picker
+              selectedValue={tipoComida}
+              onValueChange={(itemValue, itemIndex) => setTipoComida(itemValue)}
               style={styles.input}
-              value={tipoComida}
-              onChangeText={text => setTipoComida(text)}
-            />
+            >
+              <Picker.Item label="Seleccionar" value="default" />
+              {tiposComidaFiltrados.map((nombre, index) => (
+                <Picker.Item key={index} label={nombre} value={nombre} style={{ color: '#000' }} />
+              ))}
+            </Picker>
+
           </View>
         </View>
 
