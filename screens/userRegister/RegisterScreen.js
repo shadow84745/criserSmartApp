@@ -133,6 +133,11 @@ const RegisterScreen = () => {
       setError('La contraseña debe tener al menos una mayúscula, un dato numérico y un caracter especial');
       return;
     }
+
+    if(password.includes(' ')) {
+      setError('La contraseña no puede contener espacios en blanco.');
+      return;
+    }
     
 
     try {
