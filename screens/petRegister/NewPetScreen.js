@@ -24,6 +24,7 @@ const NewPetScreen = () => {
   const [marcaComida, setMarcaComida] = useState('');
   const [tipoComida, setTipoComida] = useState('');
   const [cccCalificacion, setCccCalificacion] = useState('Seleccionar'); // Nuevo estado
+  const [etapa, setEtapa] = useState('Seleccionar'); // Nuevo estado
 
 
   const [isButtonVisible, setIsButtonVisible] = useState(true);
@@ -32,7 +33,8 @@ const NewPetScreen = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   const [cccModalVisible, setCccModalVisible] = useState(false); // Nuevo estado para el modal CCC
-  const [modalTipo, setModalTipo] = useState(''); // Nuevo estado para controlar qué modal se muestra
+  const [modalTamaño, setModalTamaño] = useState(''); // Nuevo estado para controlar qué modal se muestra
+  const [modalEtapa, setModalEtapa] = useState(''); // Nuevo estado para controlar qué modal se muestra
 
 
 
@@ -44,8 +46,16 @@ const NewPetScreen = () => {
     persistence: getReactNativePersistence(AsyncStorage)
   });
 
-  const modalInfo = () =>{
+  const modalInfo = () => {
     setCccModalVisible(true);
+  };
+
+  const modalSize = () => {
+    setModalTamaño(true);
+  };
+
+  const infoModalEtapa = () => {
+    setModalEtapa(true);
   };
 
   const handleRegisterPet = async () => {
@@ -198,8 +208,47 @@ const NewPetScreen = () => {
                 <Picker.Item label="8" value="8" />
                 <Picker.Item label="9" value="9" />
               </Picker>
-              <TouchableOpacity onPress={modalInfo} > 
-              <Image source={require('../../images/infoImage.png')} style={styles.infoIcon} />
+              <TouchableOpacity onPress={modalInfo} >
+                <Image source={require('../../images/infoImage.png')} style={styles.infoIcon} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.descriptionInput}>Tamaño</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Picker
+                selectedValue={tamañoCan}
+                onValueChange={(itemValue, itemIndex) => setTamañoCan(itemValue)}
+                style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
+              >
+                <Picker.Item label="Seleccionar" value="Seleccionar" />
+                <Picker.Item label="Pequeño" value="pequeño" />
+                <Picker.Item label="Mediano" value="mediano" />
+                <Picker.Item label="Grande" value="grande" />
+                <Picker.Item label="Extra Grande" value="extra-grande" />
+              </Picker>
+              <TouchableOpacity onPress={modalSize} >
+                <Image source={require('../../images/infoImage.png')} style={styles.infoIcon} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.descriptionInput}>Etapa</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Picker
+                selectedValue={etapa}
+                onValueChange={(itemValue, itemIndex) => setEtapa(itemValue)}
+                style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
+              >
+                <Picker.Item label="Seleccionar" value="Seleccionar" />
+                <Picker.Item label="Cachorro" value="cachorro" />
+                <Picker.Item label="Adulto" value="adulto" />
+                <Picker.Item label="Senior" value="senior" />
+              </Picker>
+              <TouchableOpacity onPress={infoModalEtapa} >
+                <Image source={require('../../images/infoImage.png')} style={styles.infoIcon} />
               </TouchableOpacity>
             </View>
           </View>
@@ -211,14 +260,6 @@ const NewPetScreen = () => {
               value={pesoCan}
               keyboardType="numeric"
               onChangeText={text => setPesoCan(text)}
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.descriptionInput}>Tamaño</Text>
-            <TextInput
-              style={styles.input}
-              value={tamañoCan}
-              onChangeText={text => setTamañoCan(text)}
             />
           </View>
         </View>
@@ -286,6 +327,7 @@ const NewPetScreen = () => {
             </View>
           </View>
         </Modal>
+        {/*Modal de la calificacion corporal CCC*/}
         <Modal
           visible={cccModalVisible}
           transparent={true}
@@ -299,6 +341,35 @@ const NewPetScreen = () => {
             </TouchableOpacity>
           </View>
         </Modal>
+        {/*Modal del tamaño de la mascota*/}
+        <Modal
+          visible={modalTamaño}
+          transparent={true}
+          animationType="slide"
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalText}>¿Como puedo saber cual es el tamaño de mi mascota?</Text>
+            <Image source={require('../../images/tamañoInfo.png')} style={styles.imagenTamaño} />
+            <TouchableOpacity onPress={() => setModalTamaño(false)} style={styles.closeButton}>
+              <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
+            </TouchableOpacity>
+          </View>
+        </Modal>
+        {/*Modal de la etapa de la mascota*/}
+        <Modal
+          visible={modalEtapa}
+          transparent={true}
+          animationType="slide"
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalText}>¿Como puedo saber cual es la etapa de mi mascota?</Text>
+            <Image source={require('../../images/tamañoInfo.png')} style={styles.imagenTamaño} />
+            <TouchableOpacity onPress={() => setModalEtapa(false)} style={styles.closeButton}>
+              <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
+            </TouchableOpacity>
+          </View>
+        </Modal>
+
         <View>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
           {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
@@ -434,7 +505,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    paddingHorizontal:10,
+    paddingHorizontal: 10,
   },
   modalContent: {
     backgroundColor: '#FFF',
@@ -489,8 +560,13 @@ const styles = StyleSheet.create({
     resizeMode: 'cover', // Ajusta el modo de redimensionamiento
     marginLeft: -10,
   },
-  closeIcon:{
+  closeIcon: {
     width: 50,
     height: 50,
+  },
+  imagenTamaño: {
+    width: 390, // Ajusta el ancho según tus necesidades
+    height: 240, // Ajusta el alto según tus necesidades
+    resizeMode: 'cover', // Ajusta el modo de redimensionamiento
   }
 });
