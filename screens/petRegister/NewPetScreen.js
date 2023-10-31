@@ -102,28 +102,28 @@ const NewPetScreen = () => {
     if (dateOfBirth) {
       // Dividir la fecha de nacimiento en día, mes y año
       const parts = dateOfBirth.split('-').map(part => parseInt(part.trim(), 10));
-  
+
       // Verificar que haya tres partes (día, mes, año) y que todas sean números válidos
       if (parts.length === 3 && !parts.includes(NaN)) {
         const day = parts[0];
         const month = parts[1];
         const year = parts[2];
-  
+
         // Crear un objeto Date con la fecha de nacimiento
         const dob = new Date(year, month - 1, day);
         const today = new Date();
-  
+
         // Calcular la diferencia de tiempo en milisegundos
         const ageDiff = today - dob;
-  
+
         // Crear un objeto Date con la diferencia de tiempo
         const ageDate = new Date(ageDiff);
-  
+
         // Calcular la edad en años y meses
         const years = ageDate.getUTCFullYear() - 1970;
         const months = ageDate.getUTCMonth();
         const days = ageDate.getUTCDate();
-  
+
         // Construir la edad en un formato legible
         let ageText = '';
         if (years > 0) {
@@ -144,7 +144,7 @@ const NewPetScreen = () => {
         } else {
           ageText = "0 años, 0 meses y 0 días";
         }
-  
+
         setEdadCan(ageText); // Actualiza el estado con la edad calculada
       } else {
         setError('Formato de fecha de nacimiento no válido. Utiliza DD-MM-YYYY.');
@@ -156,18 +156,37 @@ const NewPetScreen = () => {
 
   const handleRegisterPet = async () => {
     // Validaciones
-    if (pesoCan < 1 || pesoCan.includes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'ñ', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'x', 'y', 'z', 'w')) {
-      setError('El peso del can no es valido');
+    if (
+      nombreCan === '' ||
+      dateOfBirth === '' ||
+      cccCalificacion === 'Seleccionar' ||
+      tamañoCan === 'Seleccionar' ||
+      etapa === 'Seleccionar' ||
+      pesoCan === '' ||
+      actividadFisica === 'Seleccionar' ||
+      condicionesSalud === 'Seleccionar' ||
+      marcaComida === 'Seleccionar' ||
+      tipoComida === 'Seleccionar'
+    ) {
+      setError('Todos los campos son obligatorios y no pueden estar vacíos');
       return;
     }
-
-    if (deviceSerial.length !== 15) {
-      setError('El serial del dispositivo es erroneo');
+  
+    // Validación para no colocar números en el nombre del can
+    if (/\d/.test(nombreCan)) {
+      setError('El nombre del can no puede contener números');
       return;
     }
-
-    if (nombreCan == "" || pesoCan == "" || tamañoCan == "") {
-      setError('Los campos no pueden estar vacios');
+  
+    // Validación para el campo "Peso(KG)" solo acepta datos numéricos
+    if (isNaN(parseFloat(pesoCan))) {
+      setError('El campo "Peso(KG)" debe ser un valor numérico');
+      return;
+    }
+  
+    // Additional validation for the "Tipo" field
+    if (tipoComida === 'Seleccionar') {
+      setError('El campo "Tipo" no puede quedar en "Seleccionar"');
       return;
     }
 
@@ -176,67 +195,46 @@ const NewPetScreen = () => {
 
       const user = auth.currentUser;
 
-      // Consulta para verificar si existe un documento con el mismo idDevice en la colección activeDevices
-      const activeDevicesRef = collection(db, "activeDevices");
-      const activeDevicesQuery = query(activeDevicesRef, where("idDevice", "==", idDevice));
-      const activeDevicesQuerySnapshot = await getDocs(activeDevicesQuery);
+      const docRef = await addDoc(collection(db, "dogs"), {
+        dog_name: nombreCan,
+        dog_ccc: cccCalificacion,
+        dog_size: tamañoCan,
+        dog_stage: etapa,
+        dog_weight: pesoCan,
+        dog_activity: actividadFisica,
+        dog_healthy_conditions: condicionesSalud,
+        edad_can: edadCan,
+        propietary_id: user.uid,
+      });
 
-      // Consulta para verificar si existe un documento con el mismo deviceSerial en la colección registeredDevices
-      const registeredDevicesRef = collection(db, "registeredDevices");
-      const registeredDevicesQuery = query(registeredDevicesRef, where("deviceSerial", "==", deviceSerial));
-      const registeredDevicesQuerySnapshot = await getDocs(registeredDevicesQuery);
+      console.log("Mascota registrada exitosamente");
+      console.log("Mascota registrado con el ID: ", docRef.id);
 
-      const devicesRef = collection(db, "devices");
-      const devicesQuery = query(devicesRef, where("id_device", "==", idDevice));
-      const devicesQuerySnapshot = await getDocs(devicesQuery);
 
-      if (activeDevicesQuerySnapshot.size != 0) {
-        // Ya existe un documento en la colección activeDevices con este idDevice, puedes continuar con el registro
-        if (registeredDevicesQuerySnapshot.size != 0) {
-          if (devicesQuerySnapshot.size == 0) {
-            // Ya existe un documento en la colección registeredDevices con este deviceSerial, muestra un mensaje de error
-            const docRef = await addDoc(collection(db, "dogs"), {
-              dog_name: nombreCan,
-              dog_ccc: cccCalificacion,
-              dog_size: tamañoCan,
-              dog_stage: etapa,
-              dog_weight: pesoCan,
-              dog_activity: actividadFisica,
-              dog_healthy_conditions: condicionesSalud,
-              edad_can: edadCan,
-              propietary_id: user.uid,
-            });
+      const docRefPlan = await addDoc(collection(db, "food_plan"), {
+        propietary_id: user.uid,
+        dog_id_ref: docRef.id,
+        food: tipoComida,
+        food_brand: marcaComida,
+      });
 
-            console.log("Mascota registrada exitosamente");
-            console.log("Mascota registrado con el ID: ", docRef.id);
+      console.log("Plan registro iniciado exitosamente");
+      console.log("Plan registrado con el ID: ", docRefPlan.id);
 
-            IDmascotaregistrada = docRef.id;
+      IDmascotaregistrada = docRef.id;
 
-            setIsButtonVisible(false);
-            setModalVisible(false);
-            setError('');
-            setSuccessMessage('Mascota registrada con éxito');
+      setIsButtonVisible(false);
+      setModalVisible(false);
+      setError('');
+      setSuccessMessage('Mascota registrada con éxito');
 
-            setTimeout(() => {
-              setSuccessMessage('');
-              navigation.navigate('ConnectionDispenser');
-            }, 3000);
-            setModalVisible(false);
-          } else {
-            setModalVisible(false);
-            setError('El ID del dispositivo ya esta siendo usado');
-          }
-        } else {
-          setError('El Serial del dispositivo no es valido');
-          setModalVisible(false);
-        }
-      } else {
-        // No existe un documento en la colección activeDevices con este idDevice, muestra un mensaje de error
-        setModalVisible(false);
-        setError('El ID del dispositivo no es válido');
-      }
+      setTimeout(() => {
+        setSuccessMessage('');
+        navigation.navigate('Home');
+      }, 3000);
+      setModalVisible(false);
     } catch (error) {
-      console.error("Error al crear el usuario:", error);
+      console.error("Error al crear la mascota:", error);
     }
   };
 
@@ -263,6 +261,14 @@ const NewPetScreen = () => {
     setTiposComidaFiltrados(nombres);
   };
 
+  const handleTipoComidaChange = (itemValue, itemIndex) => {
+    setTipoComida(itemValue);
+    if (itemValue === 'Seleccionar') {
+      setError('El campo "Tipo" no puede quedar en "Seleccionar"');
+    } else {
+      setError('');
+    }
+  };
 
 
   return (
@@ -465,7 +471,7 @@ const NewPetScreen = () => {
             <Text style={styles.descriptionInput}>Tipo</Text>
             <Picker
               selectedValue={tipoComida}
-              onValueChange={(itemValue, itemIndex) => setTipoComida(itemValue)}
+              onValueChange={handleTipoComidaChange}
               style={styles.input}
             >
               <Picker.Item label="Seleccionar" value="default" />
@@ -732,9 +738,9 @@ const styles = StyleSheet.create({
     height: 240, // Ajusta el alto según tus necesidades
     resizeMode: 'cover', // Ajusta el modo de redimensionamiento
   },
-  imagenTamaño:{
+  imagenTamaño: {
     width: 390,
-    resizeMode:'center'
+    resizeMode: 'center'
   },
   inputNonEditable: {
     backgroundColor: '#ccc',
