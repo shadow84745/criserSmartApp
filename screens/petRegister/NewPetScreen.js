@@ -5,7 +5,7 @@ import { initializeApp } from 'firebase/app';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import RNDateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import RNDateTimePicker from '@react-native-community/datetimepicker';
 
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,7 +24,7 @@ const NewPetScreen = () => {
   const [actividadFisica, setActividadFisica] = useState('');
   const [condicionesSalud, setCondicionesSalud] = useState('');
   const [marcaComida, setMarcaComida] = useState('');
-  const [tipoComida, setTipoComida] = useState('');
+  const [tipoComida, setTipoComida] = useState('Seleccionar');
   const [cccCalificacion, setCccCalificacion] = useState('Seleccionar'); // Nuevo estado
   const [etapa, setEtapa] = useState('Seleccionar'); // Nuevo estado
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -188,7 +188,7 @@ const NewPetScreen = () => {
     if (tipoComida === 'Seleccionar') {
       setError('El campo "Tipo" no puede quedar en "Seleccionar"');
       return;
-    }
+    }    
 
     try {
       setModalVisible(true);
@@ -230,7 +230,7 @@ const NewPetScreen = () => {
 
       setTimeout(() => {
         setSuccessMessage('');
-        navigation.navigate('Home');
+        navigation.navigate('PetPhoto');
       }, 3000);
       setModalVisible(false);
     } catch (error) {
@@ -263,12 +263,8 @@ const NewPetScreen = () => {
 
   const handleTipoComidaChange = (itemValue, itemIndex) => {
     setTipoComida(itemValue);
-    if (itemValue === 'Seleccionar') {
-      setError('El campo "Tipo" no puede quedar en "Seleccionar"');
-    } else {
-      setError('');
-    }
   };
+  
 
 
   return (
@@ -568,11 +564,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF',
   },
-  sectionCarrusel: {
-    marginTop: 20,
-    backgroundColor: '#595959',
-    padding: 20,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -592,12 +583,6 @@ const styles = StyleSheet.create({
   menuIcon: {
     width: 30,
     height: 30,
-  },
-  titleContainer: {
-    textAlign: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
   },
   descriptionInput: {
     color: '#FFF',
@@ -623,15 +608,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#00B5E2',
     marginLeft: 10,
-  },
-  smartHomeImages: {
-    flexDirection: 'row',
-    justifyContent: 'space between',
-    marginTop: 20,
-  },
-  smartHomeImage: {
-    width: 100,
-    height: 100,
   },
   contactSection: {
     marginTop: 20,

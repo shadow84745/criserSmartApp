@@ -17,6 +17,7 @@ import DeviceRegister from './screens/adminTools/DeviceRegister';
 import PhoneMethodScreen from './screens/recoverUser/PhoneMethodScreen';
 import NewPetScreen from './screens/petRegister/NewPetScreen';
 import DeviceDetailScreen from './screens/visualInterfaces/DeviceDetailScreen';
+import PetPhotoScreen from './screens/petRegister/PetPhotoScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -41,6 +42,7 @@ export default function App() {
         <Stack.Screen name="DeviceRegister" component={DeviceRegister} options={{headerShown: false}} />
         <Stack.Screen name="NewPet" component={NewPetScreen} options={{headerShown: false}} /> 
         <Stack.Screen name="DeviceDetail" component={DeviceDetailScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="PetPhoto" component={PetPhotoScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
