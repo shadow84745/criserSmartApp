@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 
 
-let IDdispositivoregistrado = null;
+let IDmascotaregistrada = null;
 
 
 const NewPetScreen = () => {
@@ -102,23 +102,53 @@ const NewPetScreen = () => {
     if (dateOfBirth) {
       // Dividir la fecha de nacimiento en día, mes y año
       const parts = dateOfBirth.split('-').map(part => parseInt(part.trim(), 10));
-
+  
       // Verificar que haya tres partes (día, mes, año) y que todas sean números válidos
       if (parts.length === 3 && !parts.includes(NaN)) {
         const day = parts[0];
         const month = parts[1];
         const year = parts[2];
-
+  
         // Crear un objeto Date con la fecha de nacimiento
         const dob = new Date(year, month - 1, day);
         const today = new Date();
+  
+        // Calcular la diferencia de tiempo en milisegundos
         const ageDiff = today - dob;
+  
+        // Crear un objeto Date con la diferencia de tiempo
         const ageDate = new Date(ageDiff);
-        const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970);
-        
+  
+        // Calcular la edad en años y meses
+        const years = ageDate.getUTCFullYear() - 1970;
+        const months = ageDate.getUTCMonth();
+        const days = ageDate.getUTCDate();
+  
+        // Construir la edad en un formato legible
+        let ageText = '';
+        if (years > 0) {
+          ageText += `${years} ${years === 1 ? 'año' : 'años'}`;
+          if (months > 0) {
+            ageText += `, ${months} ${months === 1 ? 'mes' : 'meses'}`;
+          }
+          if (days > 0) {
+            ageText += ` y ${days} ${days === 1 ? 'día' : 'días'}`;
+          }
+        } else if (months > 0) {
+          ageText += `${months} ${months === 1 ? 'mes' : 'meses'}`;
+          if (days > 0) {
+            ageText += ` y ${days} ${days === 1 ? 'día' : 'días'}`;
+          }
+        } else if (days > 0) {
+          ageText += `${days} ${days === 1 ? 'día' : 'días'}`;
+        } else {
+          ageText = "0 años, 0 meses y 0 días";
+        }
+  
+        setEdadCan(ageText); // Actualiza el estado con la edad calculada
       } else {
         setError('Formato de fecha de nacimiento no válido. Utiliza DD-MM-YYYY.');
-        edadCan('');
+        setEdadCan(''); // Restablece la edad si el formato no es válido
       }
     }
   }, [dateOfBirth]);
@@ -136,7 +166,7 @@ const NewPetScreen = () => {
       return;
     }
 
-    if (idDevice == "" || deviceSerial == "" || deviceName == "") {
+    if (nombreCan == "" || pesoCan == "" || tamañoCan == "") {
       setError('Los campos no pueden estar vacios');
       return;
     }
@@ -173,13 +203,14 @@ const NewPetScreen = () => {
               dog_weight: pesoCan,
               dog_activity: actividadFisica,
               dog_healthy_conditions: condicionesSalud,
+              edad_can: edadCan,
               propietary_id: user.uid,
             });
 
             console.log("Mascota registrada exitosamente");
             console.log("Mascota registrado con el ID: ", docRef.id);
 
-            IDdispositivoregistrado = docRef.id;
+            IDmascotaregistrada = docRef.id;
 
             setIsButtonVisible(false);
             setModalVisible(false);
@@ -219,7 +250,6 @@ const NewPetScreen = () => {
     pickerRef.current.blur();
   }
 
-  const [tiposComida, setTiposComida] = useState([]);
   const [tiposComidaFiltrados, setTiposComidaFiltrados] = useState([]);
 
 
@@ -250,7 +280,6 @@ const NewPetScreen = () => {
           <Text style={styles.sectionTitleText}>Registra un nuevo canino</Text>
         </View>
         <View style={styles.section}>
-
           <View style={styles.inputContainer}>
             <View style={styles.inputGroup}>
               <Text style={styles.descriptionInput}>Nombre del can</Text>
@@ -261,16 +290,9 @@ const NewPetScreen = () => {
                 maxLength={15}
               />
             </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.descriptionInput}>Edad del can</Text>
-              <TextInput
-                style={styles.input}
-                value={edadCan}
-                keyboardType="numeric"
-                onChangeText={text => setEdadCan(text)}
-                maxLength={2}
-              />
-            </View>
+
+            <Text style={styles.descriptionInput}>Fecha de nacimiento</Text>
+            <Text style={styles.descriptionInput}>(Aproximadamente)</Text>
             {showPicker && (
               <RNDateTimePicker
                 mode="date"
@@ -278,6 +300,7 @@ const NewPetScreen = () => {
                 value={date}
                 onChange={onChange}
                 locale="es-ES"
+                maximumDate={new Date()}
               />
             )}
             {!showPicker && (
@@ -291,6 +314,18 @@ const NewPetScreen = () => {
                 />
               </Pressable>
             )}
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.descriptionInput}>Edad del can</Text>
+              <TextInput
+                style={styles.inputNonEditable}
+                value={edadCan}
+                keyboardType="numeric"
+                onChangeText={text => setEdadCan(text)}
+                editable={false}
+                placeholder="Selecciona una fecha de nacimiento"
+              />
+            </View>
 
           </View>
         </View>
@@ -479,7 +514,7 @@ const NewPetScreen = () => {
         >
           <View style={styles.modalContainer}>
             <Text style={styles.modalText}>¿Como puedo saber cual es el tamaño de mi mascota?</Text>
-            <Image source={require('../../images/tamañoInfo.png')} style={styles.imagenTamaño} />
+            <Image source={require('../../images/tamañosInfo.png')} style={styles.imagenTamaño} />
             <TouchableOpacity onPress={() => setModalTamaño(false)} style={styles.closeButton}>
               <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
             </TouchableOpacity>
@@ -493,7 +528,7 @@ const NewPetScreen = () => {
         >
           <View style={styles.modalContainer}>
             <Text style={styles.modalText}>¿Como puedo saber cual es la etapa de mi mascota?</Text>
-            <Image source={require('../../images/tamañoInfo.png')} style={styles.imagenTamaño} />
+            <Image source={require('../../images/etapaInfo.png')} style={styles.imagenEtapa} />
             <TouchableOpacity onPress={() => setModalEtapa(false)} style={styles.closeButton}>
               <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
             </TouchableOpacity>
@@ -519,7 +554,7 @@ const NewPetScreen = () => {
 };
 
 
-export { IDdispositivoregistrado };
+export { IDmascotaregistrada };
 export default NewPetScreen;
 
 const styles = StyleSheet.create({
@@ -662,8 +697,6 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   inputContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
   section: {
@@ -694,9 +727,19 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
   },
-  imagenTamaño: {
+  imagenEtapa: {
     width: 390, // Ajusta el ancho según tus necesidades
     height: 240, // Ajusta el alto según tus necesidades
     resizeMode: 'cover', // Ajusta el modo de redimensionamiento
-  }
+  },
+  imagenTamaño:{
+    width: 390,
+    resizeMode:'center'
+  },
+  inputNonEditable: {
+    backgroundColor: '#ccc',
+    color: '#000',
+    marginBottom: 10,
+    padding: 10,
+  },
 });
