@@ -5,7 +5,7 @@ import { View } from 'react-native';
 
 
 const MethodScreen = () => {
-  const navigation = useNavigation();
+  //const navigation = useNavigation();
 
 
   const LoginScreen = () => {

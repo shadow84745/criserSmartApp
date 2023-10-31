@@ -35,8 +35,6 @@ const PetPhotoScreen = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const [showPicker, setShowPicker] = useState(false);
-    const [date, setDate] = useState(new Date());
 
 
 
@@ -57,101 +55,6 @@ const PetPhotoScreen = () => {
     const modalInfo = () => {
         setCccModalVisible(true);
     };
-
-    const modalSize = () => {
-        setModalTamaño(true);
-    };
-
-    const infoModalEtapa = () => {
-        setModalEtapa(true);
-    };
-
-    const toggleDatePicker = () => {
-        setShowPicker(!showPicker);
-    };
-
-    const formatDate = (rawDate) => {
-        let date = new Date(rawDate);
-
-        let year = date.getFullYear();
-        let month = date.getMonth() + 1;
-        let day = date.getDate();
-
-        month = month < 10 ? `0${month}` : month;
-        day = day < 10 ? `0${day}` : day;
-
-        return `${day} - ${month} -${year}`;
-    }
-
-    const onChange = ({ type }, selectedDate) => {
-        if (type == "set") {
-            const currentDate = selectedDate;
-            setDate(currentDate);
-            if (Platform.OS === "android") {
-                toggleDatePicker();
-                setDateOfBirth(formatDate(currentDate));
-            }
-
-        } else {
-            toggleDatePicker();
-        }
-    };
-
-
-    useEffect(() => {
-        if (dateOfBirth) {
-            // Dividir la fecha de nacimiento en día, mes y año
-            const parts = dateOfBirth.split('-').map(part => parseInt(part.trim(), 10));
-
-            // Verificar que haya tres partes (día, mes, año) y que todas sean números válidos
-            if (parts.length === 3 && !parts.includes(NaN)) {
-                const day = parts[0];
-                const month = parts[1];
-                const year = parts[2];
-
-                // Crear un objeto Date con la fecha de nacimiento
-                const dob = new Date(year, month - 1, day);
-                const today = new Date();
-
-                // Calcular la diferencia de tiempo en milisegundos
-                const ageDiff = today - dob;
-
-                // Crear un objeto Date con la diferencia de tiempo
-                const ageDate = new Date(ageDiff);
-
-                // Calcular la edad en años y meses
-                const years = ageDate.getUTCFullYear() - 1970;
-                const months = ageDate.getUTCMonth();
-                const days = ageDate.getUTCDate();
-
-                // Construir la edad en un formato legible
-                let ageText = '';
-                if (years > 0) {
-                    ageText += `${years} ${years === 1 ? 'año' : 'años'}`;
-                    if (months > 0) {
-                        ageText += `, ${months} ${months === 1 ? 'mes' : 'meses'}`;
-                    }
-                    if (days > 0) {
-                        ageText += ` y ${days} ${days === 1 ? 'día' : 'días'}`;
-                    }
-                } else if (months > 0) {
-                    ageText += `${months} ${months === 1 ? 'mes' : 'meses'}`;
-                    if (days > 0) {
-                        ageText += ` y ${days} ${days === 1 ? 'día' : 'días'}`;
-                    }
-                } else if (days > 0) {
-                    ageText += `${days} ${days === 1 ? 'día' : 'días'}`;
-                } else {
-                    ageText = "0 años, 0 meses y 0 días";
-                }
-
-                setEdadCan(ageText); // Actualiza el estado con la edad calculada
-            } else {
-                setError('Formato de fecha de nacimiento no válido. Utiliza DD-MM-YYYY.');
-                setEdadCan(''); // Restablece la edad si el formato no es válido
-            }
-        }
-    }, [dateOfBirth]);
 
 
     const handleRegisterPet = async () => {
@@ -196,30 +99,13 @@ const PetPhotoScreen = () => {
             const user = auth.currentUser;
 
             const docRef = await addDoc(collection(db, "dogs"), {
-                dog_name: nombreCan,
-                dog_ccc: cccCalificacion,
-                dog_size: tamañoCan,
-                dog_stage: etapa,
-                dog_weight: pesoCan,
-                dog_activity: actividadFisica,
-                dog_healthy_conditions: condicionesSalud,
-                edad_can: edadCan,
-                propietary_id: user.uid,
+                foto_can: edadCan,
+                raza_can: user.uid,
             });
 
             console.log("Mascota registrada exitosamente");
             console.log("Mascota registrado con el ID: ", docRef.id);
 
-
-            const docRefPlan = await addDoc(collection(db, "food_plan"), {
-                propietary_id: user.uid,
-                dog_id_ref: docRef.id,
-                food: tipoComida,
-                food_brand: marcaComida,
-            });
-
-            console.log("Plan registro iniciado exitosamente");
-            console.log("Plan registrado con el ID: ", docRefPlan.id);
 
             IDmascotaregistrada = docRef.id;
 
