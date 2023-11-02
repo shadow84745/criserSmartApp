@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, BackHandler, Modal } from 'react-native';
+import { Linking, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, BackHandler, Modal } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
@@ -32,6 +32,13 @@ const HomeScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
 
 
+  const handleContactSupport = () => {
+    // Número de teléfono al que se redirigirá
+    const phoneNumber = "3184756135";
+    
+    // Utiliza la función Linking para abrir la aplicación de teléfono con el número
+    Linking.openURL(`tel:${phoneNumber}`);
+  };
 
   const pets = [
     require('../../images/dogExample.png'),
@@ -201,7 +208,7 @@ const HomeScreen = () => {
         </View>
 
         <View style={styles.contactSection}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleContactSupport}>
             <Text style={styles.contactText}>Contactar con soporte</Text>
           </TouchableOpacity>
           <TouchableOpacity>

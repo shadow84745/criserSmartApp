@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, TextInput, ActivityIndicator } from 'react-native';
+import { Linking, Modal, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, TextInput, ActivityIndicator } from 'react-native';
 import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { db, firebaseConfig } from '../../firebaseConfig';
@@ -33,6 +33,15 @@ const NewDispenserScreen = () => {
   const auth = getAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage)
   });
+
+  const handleContactSupport = () => {
+    // Número de teléfono al que se redirigirá
+    const phoneNumber = "3184756135";
+    
+    // Utiliza la función Linking para abrir la aplicación de teléfono con el número
+    Linking.openURL(`tel:${phoneNumber}`);
+  };
+
 
   const handleRegisterDispenser = async () => {
     // Validaciones
@@ -214,7 +223,7 @@ const NewDispenserScreen = () => {
         </View>
 
         <View style={styles.contactSection}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleContactSupport}>
             <Text style={styles.contactText}>Contactar con soporte</Text>
           </TouchableOpacity>
           <TouchableOpacity>

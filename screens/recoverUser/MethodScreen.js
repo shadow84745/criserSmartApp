@@ -1,11 +1,12 @@
 import { useNavigation } from '@react-navigation/native'
-import { StyleSheet, TouchableOpacity, Image, Text } from 'react-native';
+import { StyleSheet, TouchableOpacity, Image, Text , Linking} from 'react-native';
 import React from 'react'
 import { View } from 'react-native';
 
 
 const MethodScreen = () => {
-  //const navigation = useNavigation();
+  
+  const navigation = useNavigation();
 
 
   const LoginScreen = () => {
@@ -19,6 +20,14 @@ const MethodScreen = () => {
   const PhoneMethodScreen = () => {
     navigation.navigate("PhoneMethod")
   }
+
+  const handleContactSupport = () => {
+    // Número de teléfono al que se redirigirá
+    const phoneNumber = "3184756135";
+    
+    // Utiliza la función Linking para abrir la aplicación de teléfono con el número
+    Linking.openURL(`tel:${phoneNumber}`);
+  };
 
   return (
     <View
@@ -49,7 +58,7 @@ const MethodScreen = () => {
 
         </View>
       </TouchableOpacity>
-      <TouchableOpacity>
+      <TouchableOpacity onPress={handleContactSupport}>
         <View
           style={styles.metodoSoporte}>
           <Image

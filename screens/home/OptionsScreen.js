@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Image, ScrollView } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Image, ScrollView , Linking} from 'react-native';
 import { getAuth, signOut, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { firebaseConfig } from '../../firebaseConfig';
@@ -26,6 +26,13 @@ const HomeScreen = () => {
             })
             .catch((error) => alert(error.message));
     };
+    const handleContactSupport = () => {
+        // Número de teléfono al que se redirigirá
+        const phoneNumber = "3184756135";
+        
+        // Utiliza la función Linking para abrir la aplicación de teléfono con el número
+        Linking.openURL(`tel:${phoneNumber}`);
+      };
 
     return (
         <ScrollView style={styles.container}>
@@ -48,7 +55,7 @@ const HomeScreen = () => {
                 <TouchableOpacity style={styles.sectionItem}>
                     <Text style={styles.sectionTitle}>Tienda (PRÓXIMAMENTE)</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.sectionItem}>
+                <TouchableOpacity style={styles.sectionItem} onPress={handleContactSupport}>
                     <Text style={styles.sectionTitle}>Contactar con soporte</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.sectionItem}>

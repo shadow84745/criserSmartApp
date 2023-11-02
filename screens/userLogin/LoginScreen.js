@@ -109,7 +109,7 @@ const LoginScreen = () => {
                 >
                     <View>
                         <TextInput
-                            placeholder="Correo Electrónico o Teléfono"
+                            placeholder="Correo Electrónico"
                             style={styles.input}
                             value={email}
                             maxLength={40}

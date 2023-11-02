@@ -1,7 +1,7 @@
 import { KeyboardAvoidingView, StyleSheet, Text, View, Image, ScrollView, ImageBackground, TextInput, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import { getAuth, sendPasswordResetEmail , getReactNativePersistence} from 'firebase/auth'
+import { getAuth, sendPasswordResetEmail, getReactNativePersistence } from 'firebase/auth'
 import { initializeApp } from 'firebase/app'
 import { firebaseConfig } from '../../firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,7 +9,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const EmailMethodScreen = () => {
 
-    const [email, setEmail] = useState('')
+    const [email, setEmail] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+    const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+    const [remainingTime, setRemainingTime] = useState(0);
+
+
 
     const navigation = useNavigation();
 
@@ -28,15 +34,45 @@ const EmailMethodScreen = () => {
     }
 
     const handleSendRecoverEmail = () => {
+        setRemainingTime(30); // Establecer el tiempo restante a 30 segundos
+
         sendPasswordResetEmail(auth, email)
             .then(() => {
-                console.log("Email Enviado Exitosamente")
+                setIsButtonDisabled(true);
+                setSuccessMessage("Email Enviado Exitosamente");
+                setErrorMessage('');
             })
             .catch(error => {
-                console.log(error);
+                if (error.code === "auth/user-not-found") {
+                    setSuccessMessage('');
+                    setErrorMessage("Ese correo electrónico no se encuentra registrado.");
+                } else if (error.code === "auth/invalid-email") {
+                    setSuccessMessage('');
+                    setErrorMessage("Introduzca un email válido.");
+                } else if(error.code === "auth/too-many-requests"){
+                    setSuccessMessage('');
+                    setErrorMessage("ERROR: Se han realizado demasiados envios seguidos");
+                }else{
+                    setSuccessMessage('');
+                    setErrorMessage(`Error: ${error.message}`);
+                }
             })
-
+            .finally(() => {
+                // Restablecer el botón después de 30 segundos
+                let time = 30;
+                const interval = setInterval(() => {
+                    time--;
+                    setRemainingTime(time);
+                    if (time === 0) {
+                        setIsButtonDisabled(false);
+                        clearInterval(interval);
+                    }
+                }, 1000); // Actualizar el contador cada segundo
+            });
     }
+
+
+
 
     return (
         <KeyboardAvoidingView
@@ -70,9 +106,21 @@ const EmailMethodScreen = () => {
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
                             onPress={handleSendRecoverEmail}
-                            style={styles.button}>
-                            <Text style={styles.linkRegistro}>Enviar token</Text>
+                            style={[styles.button, isButtonDisabled && styles.disabledButton]}
+                            disabled={isButtonDisabled}
+                        >
+                            <Text style={styles.linkRegistro}>
+                                {isButtonDisabled
+                                    ? `Espera ${remainingTime} segundos`
+                                    : 'Enviar token'}
+                            </Text>
                         </TouchableOpacity>
+
+                       
+
+                        {successMessage && <Text style={styles.successMessage}>{successMessage}</Text>}
+                        {errorMessage && <Text style={styles.errorMessage}>{errorMessage}</Text>}
+
                     </View>
                     <View style={styles.optionContainer}>
                         <Text style={styles.textoLink}>¿Tienes problemas con tu correo?</Text>
@@ -180,4 +228,26 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#FFF',
     },
+    successMessage: {
+        color: 'green',
+        fontSize: 18,
+        textAlign: 'center',
+        marginBottom: 10,
+        textShadowColor: 'white',
+        textShadowOffset: { width: -1, height: 1 }, // Ajusta el ancho del borde
+        textShadowRadius: 5,
+    },
+    errorMessage: {
+        color: 'red',
+        fontSize: 18,
+        textAlign: 'center',
+        marginBottom: 10,
+        textShadowColor: 'white',
+        textShadowOffset: { width: -1, height: 1 }, // Ajusta el ancho del borde
+        textShadowRadius: 5,
+    },
+    disabledButton: {
+        backgroundColor: 'gray', // Cambia el color a gris (o el color deseado)
+    },
+
 })

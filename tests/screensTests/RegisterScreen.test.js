@@ -32,8 +32,8 @@ test('Crear cuenta con datos válidos', async () => {
 
   fireEvent.changeText(firstNameInput, 'Nombre');
   fireEvent.changeText(emailInput, 'usuario@ejemplo.com');
-  fireEvent.changeText(passwordInput, 'contraseñaSegura');
-  fireEvent.changeText(confirmPasswordInput, 'contraseñaSegura');
+  fireEvent.changeText(passwordInput, 'Contraseña123.');
+  fireEvent.changeText(confirmPasswordInput, 'Contraseña123.');
   fireEvent.changeText(phoneInput, '3001234567');
   fireEvent.changeText(usernameInput, 'nombredeusuario');
   fireEvent.changeText(dateOfBirthInput, '01 - 09 -1999');

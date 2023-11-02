@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Linking, useState, useEffect } from 'react';
 import { ActivityIndicator, Image, StyleSheet, View, Text, FlatList, TextInput, Button, PermissionsAndroid, TouchableOpacity, SafeAreaView, Modal } from 'react-native';
 import WifiManager from 'react-native-wifi-reborn';
 import { initializeApp } from 'firebase/app';
@@ -23,6 +23,14 @@ const WiffiConnectionScreen = () => {
 
   const app = initializeApp(firebaseConfig);
   const navigation = useNavigation();
+
+  const handleContactSupport = () => {
+    // Número de teléfono al que se redirigirá
+    const phoneNumber = "3184756135";
+    
+    // Utiliza la función Linking para abrir la aplicación de teléfono con el número
+    Linking.openURL(`tel:${phoneNumber}`);
+  };
 
   useEffect(() => {
     const requestLocationPermission = async () => {

@@ -3,20 +3,15 @@
     "version": ">= 5.6.0"
   },
   "build": {
-    "preview": {
+    "production": {
       "android": {
         "buildType" : "apk"
       }
     },
-    "preview2": {
+    "production2": {
       "android": {
         "gradleCommand":  ":app:assembleRelease"
       }
-    },
-    "preview3": {
-      "developmentClient": true
-    },
-    "production": {
     }
   },
   "submit": {

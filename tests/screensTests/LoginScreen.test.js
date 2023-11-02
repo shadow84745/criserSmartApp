@@ -8,7 +8,7 @@ test('LoginScreen se renderiza correctamente', () => {
 
   // Verificar que algunos elementos esperados estén en la pantalla
   expect(getByText('!SEA BIENVENIDO!')).toBeTruthy();
-  expect(getByPlaceholderText('Correo Electrónico o Teléfono')).toBeTruthy();
+  expect(getByPlaceholderText('Correo Electrónico')).toBeTruthy();
   expect(getByPlaceholderText('Contraseña')).toBeTruthy();
 });
 
@@ -17,7 +17,7 @@ test('Iniciar sesión con credenciales válidas', async () => {
   const { getByPlaceholderText, getByText } = render(<LoginScreen />);
 
   // Simular la entrada de datos del usuario
-  const emailInput = getByPlaceholderText('Correo Electrónico o Teléfono');
+  const emailInput = getByPlaceholderText('Correo Electrónico');
   const passwordInput = getByPlaceholderText('Contraseña');
   const loginButton = getByText('Iniciar Sesión');
 
@@ -38,7 +38,7 @@ test('Manejo de errores en el inicio de sesión', async () => {
   const { getByPlaceholderText, getByText } = render(<LoginScreen />);
 
   // Simular la entrada de datos del usuario
-  const emailInput = getByPlaceholderText('Correo Electrónico o Teléfono');
+  const emailInput = getByPlaceholderText('Correo Electrónico');
   const passwordInput = getByPlaceholderText('Contraseña');
   const loginButton = getByText('Iniciar Sesión');
 

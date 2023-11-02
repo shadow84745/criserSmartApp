@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, TextInput } from 'react-native';
+import { Linking, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, TextInput } from 'react-native';
 import { initializeApp } from 'firebase/app';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
@@ -13,7 +13,13 @@ const ConnectionDispenserScreen = () => {
   const [isButtonVisible, setIsButtonVisible] = useState(false);
   const [isDevicePaired, setIsDevicePaired] = useState(false);
 
-
+  const handleContactSupport = () => {
+    // Número de teléfono al que se redirigirá
+    const phoneNumber = "3184756135";
+    
+    // Utiliza la función Linking para abrir la aplicación de teléfono con el número
+    Linking.openURL(`tel:${phoneNumber}`);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -115,7 +121,7 @@ const ConnectionDispenserScreen = () => {
 
 
         <View style={styles.contactSection}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleContactSupport}>
             <Text style={styles.contactText}>Contactar con soporte</Text>
           </TouchableOpacity>
           <TouchableOpacity>
