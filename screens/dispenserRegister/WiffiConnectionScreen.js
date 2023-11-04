@@ -2,7 +2,7 @@ import React, { Linking, useState, useEffect } from 'react';
 import { ActivityIndicator, Image, StyleSheet, View, Text, FlatList, TextInput, Button, PermissionsAndroid, TouchableOpacity, SafeAreaView, Modal } from 'react-native';
 import WifiManager from 'react-native-wifi-reborn';
 import { initializeApp } from 'firebase/app';
-import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
+import { collection, doc, setDoc } from 'firebase/firestore';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { IDdispositivoregistrado } from './NewDispenserScreen';

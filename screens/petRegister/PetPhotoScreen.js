@@ -1,34 +1,23 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View, Image, ScrollView, SafeAreaView, TextInput, ActivityIndicator, Pressable } from 'react-native';
 import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import RNDateTimePicker from '@react-native-community/datetimepicker';
-
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
+import * as ImagePicker from 'expo-image-picker';
+import { getDownloadURL, getStorage, ref, uploadBytes, uploadString } from '@firebase/storage';
+import { IDmascotaregistrada, dog_name, dog_ccc, dog_activity, dog_size, dog_stage, dog_weight, edad_can, dog_healthy_conditions, propietary_id, food, food_brand } from './NewPetScreen';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
-
-
-let IDmascotaregistrada = null;
+import { getImageExtension, uriToBlob } from '../../utils';
 
 
 const PetPhotoScreen = () => {
 
-    const [nombreCan, setNombreCan] = useState('');
-    const [edadCan, setEdadCan] = useState('');
-    const [pesoCan, setPesoCan] = useState('');
-    const [tamañoCan, setTamañoCan] = useState('');
-    const [actividadFisica, setActividadFisica] = useState('');
-    const [condicionesSalud, setCondicionesSalud] = useState('');
-    const [marcaComida, setMarcaComida] = useState('');
-    const [tipoComida, setTipoComida] = useState('Seleccionar');
-    const [cccCalificacion, setCccCalificacion] = useState('Seleccionar'); // Nuevo estado
-    const [etapa, setEtapa] = useState('Seleccionar'); // Nuevo estado
-    const [dateOfBirth, setDateOfBirth] = useState('');
-
+    const [race, setRace] = useState('Seleccionar'); // Nuevo estado
+    const [dogPhoto, setDogPhoto] = useState("");
 
 
     const [isButtonVisible, setIsButtonVisible] = useState(true);
@@ -37,77 +26,123 @@ const PetPhotoScreen = () => {
     const [successMessage, setSuccessMessage] = useState('');
 
 
-
-    const [cccModalVisible, setCccModalVisible] = useState(false); // Nuevo estado para el modal CCC
-    const [modalTamaño, setModalTamaño] = useState(''); // Nuevo estado para controlar qué modal se muestra
-    const [modalEtapa, setModalEtapa] = useState(''); // Nuevo estado para controlar qué modal se muestra
-
-
-
     const navigation = useNavigation();
 
     const app = initializeApp(firebaseConfig);
+
+
+    const openGallery = async () => {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (permission.granted) {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                allowsEditing: true,
+                aspect: [1, 1],
+            });
+
+            if (!result.canceled) {
+                setDogPhoto(result.assets[0].uri);
+            }
+            console.log(dogPhoto);
+        } else {
+            console.log('Permission to access media library denied');
+        }
+    };
+
+
+
+    const openCamera = async () => {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+        if (permission.granted) {
+            const result = await ImagePicker.launchCameraAsync({
+                allowsEditing: true,
+                aspect: [1, 1], // Establece la relación de aspecto 1:1 para una forma circular
+            });
+
+            if (!result.canceled) {
+                setDogPhoto(result.assets[0].uri);
+            }
+            console.log(dogPhoto);
+        } else {
+            console.log('Permission to access the camera denied');
+        }
+    };
+
+
+
 
     const auth = getAuth(app, {
         persistence: getReactNativePersistence(AsyncStorage)
     });
 
-    const modalInfo = () => {
-        setCccModalVisible(true);
-    };
+    const user = auth.currentUser;
+
+
+
 
 
     const handleRegisterPet = async () => {
         // Validaciones
         if (
-            nombreCan === '' ||
-            dateOfBirth === '' ||
-            cccCalificacion === 'Seleccionar' ||
-            tamañoCan === 'Seleccionar' ||
-            etapa === 'Seleccionar' ||
-            pesoCan === '' ||
-            actividadFisica === 'Seleccionar' ||
-            condicionesSalud === 'Seleccionar' ||
-            marcaComida === 'Seleccionar' ||
-            tipoComida === 'Seleccionar'
+            race === 'Seleccionar' ||
+            dogPhoto === ""
         ) {
             setError('Todos los campos son obligatorios y no pueden estar vacíos');
-            return;
-        }
-
-        // Validación para no colocar números en el nombre del can
-        if (/\d/.test(nombreCan)) {
-            setError('El nombre del can no puede contener números');
-            return;
-        }
-
-        // Validación para el campo "Peso(KG)" solo acepta datos numéricos
-        if (isNaN(parseFloat(pesoCan))) {
-            setError('El campo "Peso(KG)" debe ser un valor numérico');
-            return;
-        }
-
-        // Additional validation for the "Tipo" field
-        if (tipoComida === 'Seleccionar') {
-            setError('El campo "Tipo" no puede quedar en "Seleccionar"');
             return;
         }
 
         try {
             setModalVisible(true);
 
-            const user = auth.currentUser;
 
-            const docRef = await addDoc(collection(db, "dogs"), {
-                foto_can: edadCan,
-                raza_can: user.uid,
-            });
-
-            console.log("Mascota registrada exitosamente");
-            console.log("Mascota registrado con el ID: ", docRef.id);
+            const imageUrl = await uploadImageToStorage(dogPhoto, user.uid);
 
 
-            IDmascotaregistrada = docRef.id;
+            try {
+                const docRef = await addDoc(collection(db, "dogs"), {
+                    photo_can: imageUrl,
+                    race_can: race,
+                    dog_name: dog_name,
+                    dog_ccc: dog_ccc,
+                    dog_size: dog_size,
+                    dog_stage: dog_stage,
+                    dog_weight: dog_weight,
+                    dog_activity: dog_activity,
+                    dog_healthy_conditions: dog_healthy_conditions,
+                    edad_can: edad_can,
+                    propietary_id: user.uid,
+                });
+
+                console.log("Mascota registrada exitosamente");
+                console.log("Mascota registrado con el ID: ", docRef.id);
+
+
+                const dogCollectionRef = collection(db, "dogs");
+                const dogDocRef = doc(dogCollectionRef, docRef.id);
+
+                await setDoc(dogDocRef, {
+                    dog_id: docRef.id,
+                }, { merge: true });
+
+                console.log("Se creo el identificador unico exitosamente")
+
+
+                const docRefPlan = await addDoc(collection(db, "food_plan"), {
+                    propietary_id: user.uid,
+                    dog_id_ref: docRef.id,
+                    food: food,
+                    food_brand: food_brand,
+                });
+
+                console.log("Plan registro iniciado exitosamente");
+                console.log("Plan registrado con el ID: ", docRefPlan.id);
+
+
+            } catch (error) {
+                console.error('Error al agregar datos a Firestore:', error);
+            }
+
 
             setIsButtonVisible(false);
             setModalVisible(false);
@@ -134,23 +169,36 @@ const PetPhotoScreen = () => {
         pickerRef.current.blur();
     }
 
-    const [tiposComidaFiltrados, setTiposComidaFiltrados] = useState([]);
+
+    const uploadImageToStorage = async (dogPhoto, uid) => {
+        try {
+            const storage = getStorage();
+            const userUID = user.uid;
 
 
-    const obtenerTiposComida = async (marcaComida) => {
-        const dogFoodRef = collection(db, "dog_food");
-        const dogQuery = query(dogFoodRef, where("marca", "==", marcaComida));
-        const querySnapshot = await getDocs(dogQuery);
+            const extension = getImageExtension(dogPhoto);
 
-        const nombres = querySnapshot.docs.map(doc => doc.data().nombre);
+            const userStorageRef = ref(storage, `userDogsProfileImage/${userUID}`);
 
-        setTiposComidaFiltrados(nombres);
+            const imageFileName = `${IDmascotaregistrada}_${user.uid}.${extension}`;
+
+            const imageRef = ref(userStorageRef, imageFileName);
+
+            const blob = await uriToBlob(dogPhoto);
+
+
+
+            await uploadBytes(imageRef, blob, 'data_url', { contentType: "image/jpeg" });
+
+            const downloadUrl = await getDownloadURL(imageRef);
+
+            console.log('Imagen subida con éxito y URL de descarga obtenida:', downloadUrl);
+            return downloadUrl;
+        } catch (error) {
+            console.error('Error al subir la imagen a Storage:', error);
+            return null;
+        }
     };
-
-    const handleTipoComidaChange = (itemValue, itemIndex) => {
-        setTipoComida(itemValue);
-    };
-
 
 
     return (
@@ -180,11 +228,35 @@ const PetPhotoScreen = () => {
 
                 <View style={styles.section}>
                     <View style={styles.inputGroup}>
+                        <Text style={styles.descriptionInput}>Foto de perfil</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={styles.imagePreviewContainer}>
+                                {dogPhoto && (
+                                    <Image source={{ uri: dogPhoto }} style={styles.circularImage} />
+                                )}
+                                {!dogPhoto && (
+                                    <Image source={require('../../images/blueCircle.png')} style={styles.circularImage} />
+                                )}
+                            </View>
+                            <View style={styles.buttonsContainer}>
+                                <TouchableOpacity onPress={openGallery} style={styles.galleryButton}>
+                                    <Text style={styles.buttonText}>Abrir galería</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={openCamera} style={styles.cameraButton}>
+                                    <Text style={styles.buttonText}>Abrir cámara</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+                <View style={styles.section}>
+                    <View style={styles.inputGroup}>
                         <Text style={styles.descriptionInput}>Raza</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Picker
-                                selectedValue={etapa}
-                                onValueChange={(itemValue, itemIndex) => setEtapa(itemValue)}
+                                selectedValue={race}
+                                onValueChange={(itemValue, itemIndex) => setRace(itemValue)}
                                 style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
                             >
                                 <Picker.Item label="Seleccionar" value="Seleccionar" />
@@ -198,32 +270,19 @@ const PetPhotoScreen = () => {
                             </Picker>
                         </View>
                     </View>
-                </View>
-
-                <View style={styles.section}>
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.descriptionInput}>Foto de perfil</Text>
-                        <Picker
-                            ref={pickerRef}
-                            selectedValue={actividadFisica}
-                            onValueChange={(itemValue, itemIndex) => setActividadFisica(itemValue)}
-                            style={styles.input}
-                        >
-                            <Picker.Item label="Seleccionar" value="default" />
-                            <Picker.Item label="Vida Activa" value="activa" />
-                            <Picker.Item label="Sedentaria" value="sedentaria" />
-                            {/* Agrega más opciones según tus necesidades */}
-                        </Picker>
+                    <View style={styles.buttonContainer}>
+                        {isButtonVisible && (
+                            <TouchableOpacity onPress={handleRegisterPet} style={styles.button}>
+                                <Text style={styles.buttonText}>Continuar</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <View>
+                        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                        {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
                     </View>
                 </View>
 
-                <View style={styles.buttonContainer}>
-                    {isButtonVisible && (
-                        <TouchableOpacity onPress={handleRegisterPet} style={styles.button}>
-                            <Text style={styles.buttonText}>Continuar</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
                 <Modal animationType='fade' transparent={true} visible={modalVisible}>
                     <View style={styles.modalContainer}>
                         <View style={styles.modalContent}>
@@ -232,53 +291,8 @@ const PetPhotoScreen = () => {
                         </View>
                     </View>
                 </Modal>
-                {/*Modal de la calificacion corporal CCC*/}
-                <Modal
-                    visible={cccModalVisible}
-                    transparent={true}
-                    animationType="slide"
-                >
-                    <View style={styles.modalContainer}>
-                        <Text style={styles.modalText}>¿Que es la calificacion de la condicion corporal (CCC)?</Text>
-                        <Image source={require('../../images/perroSalud.png')} style={styles.imagenCCC} />
-                        <TouchableOpacity onPress={() => setCccModalVisible(false)} style={styles.closeButton}>
-                            <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
-                        </TouchableOpacity>
-                    </View>
-                </Modal>
-                {/*Modal del tamaño de la mascota*/}
-                <Modal
-                    visible={modalTamaño}
-                    transparent={true}
-                    animationType="slide"
-                >
-                    <View style={styles.modalContainer}>
-                        <Text style={styles.modalText}>¿Como puedo saber cual es el tamaño de mi mascota?</Text>
-                        <Image source={require('../../images/tamañosInfo.png')} style={styles.imagenTamaño} />
-                        <TouchableOpacity onPress={() => setModalTamaño(false)} style={styles.closeButton}>
-                            <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
-                        </TouchableOpacity>
-                    </View>
-                </Modal>
-                {/*Modal de la etapa de la mascota*/}
-                <Modal
-                    visible={modalEtapa}
-                    transparent={true}
-                    animationType="slide"
-                >
-                    <View style={styles.modalContainer}>
-                        <Text style={styles.modalText}>¿Como puedo saber cual es la etapa de mi mascota?</Text>
-                        <Image source={require('../../images/etapaInfo.png')} style={styles.imagenEtapa} />
-                        <TouchableOpacity onPress={() => setModalEtapa(false)} style={styles.closeButton}>
-                            <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
-                        </TouchableOpacity>
-                    </View>
-                </Modal>
 
-                <View>
-                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                    {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
-                </View>
+
 
                 <View style={styles.contactSection}>
                     <TouchableOpacity>
@@ -288,6 +302,16 @@ const PetPhotoScreen = () => {
                         <Text style={styles.contactText}>Ver la guía</Text>
                     </TouchableOpacity>
                 </View>
+
+
+                <Modal animationType='fade' transparent={true} visible={modalVisible}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <ActivityIndicator size="large" color="#00B5E2" />
+                            <Text style={styles.modalText}>Realizando registro...</Text>
+                        </View>
+                    </View>
+                </Modal>
             </ScrollView>
         </SafeAreaView>
     );
@@ -405,17 +429,6 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         color: '#fff',
     },
-    modalCloseButton: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        color: '#00B5E2',
-        marginTop: 10,
-    },
-    inputSection: {
-        width: '50%',
-        padding: 5,
-    },
     inputContainer: {
         justifyContent: 'space-between',
     },
@@ -425,42 +438,12 @@ const styles = StyleSheet.create({
         paddingVertical: 20,
         marginVertical: 5,
     },
-    infoIcon: {
-        width: 20,
-        height: 20,
-        marginLeft: 10, // Espacio entre el botón y el ícono
-    },
     selectorInput: {
         backgroundColor: '#FFF',
         color: '#000',
         marginBottom: 10,
         padding: 10,
         flex: 1,
-    },
-    imagenCCC: {
-        width: 410, // Ajusta el ancho según tus necesidades
-        height: 430, // Ajusta el alto según tus necesidades
-        resizeMode: 'cover', // Ajusta el modo de redimensionamiento
-        marginLeft: -10,
-    },
-    closeIcon: {
-        width: 50,
-        height: 50,
-    },
-    imagenEtapa: {
-        width: 390, // Ajusta el ancho según tus necesidades
-        height: 240, // Ajusta el alto según tus necesidades
-        resizeMode: 'cover', // Ajusta el modo de redimensionamiento
-    },
-    imagenTamaño: {
-        width: 390,
-        resizeMode: 'center'
-    },
-    inputNonEditable: {
-        backgroundColor: '#ccc',
-        color: '#000',
-        marginBottom: 10,
-        padding: 10,
     },
     cameraImage: {
         height: 100,
@@ -471,5 +454,40 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    circularImage: {
+        width: 150,
+        height: 150,
+        borderRadius: 75, // Esto hará que la imagen tenga forma circular
+        marginVertical: 20,
+    },
+    buttonsContainer: {
+        marginTop: 15,
+        flexDirection: 'column', // Muestra los botones uno sobre otro
+        alignItems: 'flex-end', // Alinea los botones a la derecha
+        flex: 1, // Para que los botones ocupen el espacio disponible
+    },
+    imagePreviewContainer: {
+        flex: 1, // La imagen ocupa la mitad izquierda de la sección
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    galleryButton: {
+        // Puedes establecer un ancho mínimo o fijo para el botón "Abrir galería"
+        minWidth: 150,
+        backgroundColor: '#00B5E2',
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        borderRadius: 5,
+        marginBottom: 10, // Ajusta el ancho mínimo según tus necesidades
+    },
+    cameraButton: {
+        // Establece un ancho mínimo o fijo para el botón "Abrir cámara" para que coincida con el botón "Abrir galería"
+        minWidth: 150,
+        backgroundColor: '#00B5E2',
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        borderRadius: 5,
+        marginBottom: 10, // Ajusta el ancho mínimo según tus necesidades
     },
 });

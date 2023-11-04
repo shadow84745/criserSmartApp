@@ -11,8 +11,17 @@ import RNDateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 
-
-let IDmascotaregistrada = null;
+let dog_name = null;
+let dog_ccc = null;
+let dog_size = null;
+let dog_stage = null;
+let dog_weight = null;
+let dog_activity = null;
+let dog_healthy_conditions = null;
+let edad_can = null;
+let propietary_id = null;
+let food = null;
+let food_brand = null;
 
 
 const NewPetScreen = () => {
@@ -171,57 +180,47 @@ const NewPetScreen = () => {
       setError('Todos los campos son obligatorios y no pueden estar vacíos');
       return;
     }
-  
+
     // Validación para no colocar números en el nombre del can
     if (/\d/.test(nombreCan)) {
       setError('El nombre del can no puede contener números');
       return;
     }
-  
+
     // Validación para el campo "Peso(KG)" solo acepta datos numéricos
     if (isNaN(parseFloat(pesoCan))) {
       setError('El campo "Peso(KG)" debe ser un valor numérico');
       return;
     }
-  
+
     // Additional validation for the "Tipo" field
     if (tipoComida === 'Seleccionar') {
       setError('El campo "Tipo" no puede quedar en "Seleccionar"');
       return;
-    }    
+    }
 
     try {
       setModalVisible(true);
 
       const user = auth.currentUser;
 
-      const docRef = await addDoc(collection(db, "dogs"), {
-        dog_name: nombreCan,
-        dog_ccc: cccCalificacion,
-        dog_size: tamañoCan,
-        dog_stage: etapa,
-        dog_weight: pesoCan,
-        dog_activity: actividadFisica,
-        dog_healthy_conditions: condicionesSalud,
-        edad_can: edadCan,
-        propietary_id: user.uid,
-      });
+      dog_name = nombreCan;
+      dog_ccc = cccCalificacion;
+      dog_size = tamañoCan;
+      dog_stage = etapa;
+      dog_weight = pesoCan;
+      dog_activity = actividadFisica;
+      dog_healthy_conditions = condicionesSalud;
+      edad_can = edadCan;
+      propietary_id = user.uid;
 
-      console.log("Mascota registrada exitosamente");
-      console.log("Mascota registrado con el ID: ", docRef.id);
+      console.log("Datos pendientes de aprobacion");
 
 
-      const docRefPlan = await addDoc(collection(db, "food_plan"), {
-        propietary_id: user.uid,
-        dog_id_ref: docRef.id,
-        food: tipoComida,
-        food_brand: marcaComida,
-      });
+      food = tipoComida;
+      food_brand = marcaComida;
 
-      console.log("Plan registro iniciado exitosamente");
-      console.log("Plan registrado con el ID: ", docRefPlan.id);
-
-      IDmascotaregistrada = docRef.id;
+      console.log("Plan registro pendiente de aprobacion");
 
       setIsButtonVisible(false);
       setModalVisible(false);
@@ -264,7 +263,7 @@ const NewPetScreen = () => {
   const handleTipoComidaChange = (itemValue, itemIndex) => {
     setTipoComida(itemValue);
   };
-  
+
 
 
   return (
@@ -432,6 +431,7 @@ const NewPetScreen = () => {
               style={styles.input}
             >
               <Picker.Item label="Seleccionar" value="default" />
+              <Picker.Item label="Ninguna Enfermedad (Perro sano)" value="ninguna" />
               <Picker.Item label="Enfermedad Renal" value="renal" />
               <Picker.Item label="Problemas de Pancreatilis" value="pancreatilis" />
               <Picker.Item label="Diabetes" value="diabetes" />
@@ -556,7 +556,7 @@ const NewPetScreen = () => {
 };
 
 
-export { IDmascotaregistrada };
+export { dog_name, dog_ccc, dog_activity, dog_size, dog_stage, dog_weight, edad_can, dog_healthy_conditions, propietary_id, food, food_brand };
 export default NewPetScreen;
 
 const styles = StyleSheet.create({

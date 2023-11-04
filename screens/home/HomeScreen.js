@@ -26,9 +26,9 @@ const HomeScreen = () => {
   });
 
 
-  const [userData, setUserData] = useState({}); // Almacena los datos del usuario desde Firestore
   const user = auth.currentUser;
   const [devices, setDevices] = useState([]);
+  const [dogs, setDogs] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
 
@@ -40,13 +40,6 @@ const HomeScreen = () => {
     Linking.openURL(`tel:${phoneNumber}`);
   };
 
-  const pets = [
-    require('../../images/dogExample.png'),
-    require('../../images/dogExample.png'),
-    require('../../images/dogExample.png'),
-    require('../../images/dogExample.png'),
-    null,
-  ];
 
 
   useEffect(() => {
@@ -79,10 +72,24 @@ const HomeScreen = () => {
       setDevices(updatedDevices);
     });
 
+
+    const dogsRef = collection(db, "dogs");
+    const dogsQuery = query(dogsRef, where("propietary_id", "==", user.uid));
+
+    // Establecer la suscripción en tiempo real a la colección "devices"
+    const unsubscribeDog = onSnapshot(dogsQuery, (snapshot) => {
+      const updatedDogs = [];
+      snapshot.forEach((doc) => {
+        updatedDogs.push(doc.data());
+      });
+      updatedDogs.push(null);
+      setDogs(updatedDogs);
+    });
     
 
     return () => {      // Cancelar la suscripción cuando se desmonte la pantalla
       unsubscribe();
+      unsubscribeDog();
     };
   }, [user]);
 
@@ -94,6 +101,10 @@ const HomeScreen = () => {
 
   const handleDeviceSelect = (device) => {
     navigation.navigate('DeviceDetail', { device });
+  };
+
+  const handleDogSelect = (dog) => {
+    navigation.navigate('DogDetail', { dog });
   };
   
 
@@ -118,6 +129,8 @@ const HomeScreen = () => {
     }
   };
 
+  
+
   const handleSignOut = () => {
     auth
         .signOut()
@@ -136,13 +149,14 @@ const HomeScreen = () => {
           <Image source={require('../../images/addNew.png')} style={styles.addButton}/> 
         </TouchableOpacity>
       );
+    }else{
+      return (
+        <TouchableOpacity style={styles.deviceCarrousel} onPress={() => handleDogSelect(item)}>
+          <Image source={{ uri: item.photo_can }} style={styles.carouselImageDog} />
+          <Text style={styles.buttonText}>{item.dog_name}</Text>
+        </TouchableOpacity>
+      )
     };
-
-    return (
-      <TouchableOpacity>
-        <Image source={item} style={styles.carouselImage} />
-      </TouchableOpacity>
-    );
   };
 
 
@@ -184,7 +198,7 @@ const HomeScreen = () => {
 
           <View style={styles.sectionCarrusel}>
             <Carousel
-              data={pets}
+              data={dogs}
               renderItem={renderCarouselItemDog}
               sliderWidth={350}
               itemWidth={200}
@@ -360,4 +374,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     margin: 10,
   },
+  carouselImageDog:{
+    width: 200,
+    height: 200,
+    marginHorizontal: 10,
+    borderRadius: 85,
+  }
 });

@@ -23,7 +23,8 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "CAMERA_ROLL"
       ],
       "package": "com.criser.dispensadorproyecto"
     },
