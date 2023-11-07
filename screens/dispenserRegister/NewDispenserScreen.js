@@ -4,14 +4,15 @@ import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-
-let IDdispositivoregistrado = null;
-
+let device_name = null;
+let id_device = null;
+let image = null;
+let serial_device = null;
 
 const NewDispenserScreen = () => {
 
@@ -74,8 +75,7 @@ const NewDispenserScreen = () => {
       const registeredDevicesRef = collection(db, "registeredDevices");
       const registeredDevicesQuery = query(registeredDevicesRef, where("deviceSerial", "==", deviceSerial));
       const registeredDevicesQuerySnapshot = await getDocs(registeredDevicesQuery);
-
-      let image = ""; // Inicializa la variable para almacenar la URL de la imagen
+     // Inicializa la variable para almacenar la URL de la imagen
 
       if (registeredDevicesQuerySnapshot.size > 0) {
         registeredDevicesQuerySnapshot.forEach((doc) => {
@@ -93,18 +93,12 @@ const NewDispenserScreen = () => {
         if (registeredDevicesQuerySnapshot.size != 0) {
           if (devicesQuerySnapshot.size == 0) {
             // Ya existe un documento en la colección registeredDevices con este deviceSerial, muestra un mensaje de error
-            const docRef = await addDoc(collection(db, "devices"), {
-              device_name: deviceName,
-              id_device: idDevice,
-              serial_device: deviceSerial,
-              propietary_id: user.uid,
-              image: image,
-            });
+              device_name = deviceName;
+              id_device = idDevice;
+              serial_device = deviceSerial;
+              image = image;
 
-            console.log("Dispositivo registrado exitosamente");
-            console.log("Dispositivo registrado con el ID: ", docRef.id);
-
-            IDdispositivoregistrado = docRef.id;
+            console.log("Dispositivo pendiente para completar");
 
             setIsButtonVisible(false);
             setModalVisible(false);
@@ -236,7 +230,8 @@ const NewDispenserScreen = () => {
 };
 
 
-export { IDdispositivoregistrado };
+export { device_name, id_device, serial_device, image };
+
 export default NewDispenserScreen;
 
 const styles = StyleSheet.create({

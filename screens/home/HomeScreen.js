@@ -15,7 +15,7 @@ const HomeScreen = () => {
 
   const navigation = useNavigation();
   const isFocused = useIsFocused();
-  
+
 
   const app = initializeApp(firebaseConfig);
 
@@ -35,7 +35,7 @@ const HomeScreen = () => {
   const handleContactSupport = () => {
     // Número de teléfono al que se redirigirá
     const phoneNumber = "3184756135";
-    
+
     // Utiliza la función Linking para abrir la aplicación de teléfono con el número
     Linking.openURL(`tel:${phoneNumber}`);
   };
@@ -57,7 +57,7 @@ const HomeScreen = () => {
   }, [isFocused]);
 
   useEffect(() => {
-    
+
 
     const devicesRef = collection(db, "devices");
     const devicesQuery = query(devicesRef, where("propietary_id", "==", user.uid));
@@ -85,7 +85,7 @@ const HomeScreen = () => {
       updatedDogs.push(null);
       setDogs(updatedDogs);
     });
-    
+
 
     return () => {      // Cancelar la suscripción cuando se desmonte la pantalla
       unsubscribe();
@@ -106,17 +106,23 @@ const HomeScreen = () => {
   const handleDogSelect = (dog) => {
     navigation.navigate('DogDetail', { dog });
   };
-  
+
 
   // En la función renderCarouselItem, muestra el nombre del dispositivo
   const renderCarouselItem = ({ item, index }) => {
     //console.log("Longitud de devices:", devices.length); ----------- Testear que todos los dispositivos se muestren
     //console.log("Índice del elemento:", index);  
-  
-    if (item === null) {
+    const isNullItem = item === null;
+
+    if (isNullItem) {
       return (
-        <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('NewDispenser')}>
-          <Image source={require('../../images/addNew.png')} style={styles.addButton}/> 
+        <TouchableOpacity style={
+          devices.length === 1 // Verifica si hay otros elementos aparte del botón
+            ? styles.addButtonFull // Estilo cuando no hay otros elementos
+            : styles.addButton // Estilo cuando hay otros elementos
+        } 
+        onPress={() => navigation.navigate('NewDispenser')}>
+          <Image source={require('../../images/addNew.png')} style={styles.addButton} />
         </TouchableOpacity>
       );
     } else {
@@ -129,27 +135,35 @@ const HomeScreen = () => {
     }
   };
 
-  
+
 
   const handleSignOut = () => {
     auth
-        .signOut()
-        .then(() => {
-            navigation.replace('Login');
-        })
-        .catch((error) => alert(error.message));
-};
+      .signOut()
+      .then(() => {
+        navigation.replace('Login');
+      })
+      .catch((error) => alert(error.message));
+  };
 
 
 
   const renderCarouselItemDog = ({ item, index }) => {
-    if (item === null) {
+    const isNullItem = item === null;
+
+    if (isNullItem) {
       return (
-        <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('NewPet')}>
-          <Image source={require('../../images/addNew.png')} style={styles.addButton}/> 
+        <TouchableOpacity  
+        style={
+          devices.length === 1 // Verifica si hay otros elementos aparte del botón
+            ? styles.addButtonFull // Estilo cuando no hay otros elementos
+            : styles.addButton // Estilo cuando hay otros elementos
+        }
+        onPress={() => navigation.navigate('NewPet')}>
+          <Image source={require('../../images/addNew.png')} style={styles.addButton} />
         </TouchableOpacity>
       );
-    }else{
+    } else {
       return (
         <TouchableOpacity style={styles.deviceCarrousel} onPress={() => handleDogSelect(item)}>
           <Image source={{ uri: item.photo_can }} style={styles.carouselImageDog} />
@@ -284,6 +298,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#595959',
     padding: 20,
     borderRadius: 10,
+    justifyContent: 'center',
+    alignContent: 'center'
   },
   sectionTitle: {
     fontSize: 24,
@@ -296,11 +312,6 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     marginHorizontal: 10,
-  },
-  addButton: {
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center'
   },
   contactSection: {
     marginTop: 20,
@@ -318,22 +329,22 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   smartHomeImage: {
-    width: 100,
+    width: 160,
     height: 100,
   },
-  deviceCarrousel:{
+  deviceCarrousel: {
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: -50,
   },
-  addButton:{
-    marginLeft:20,
-    padding:30,
-    alignItems: 'center',
+  addButton: {
+    marginLeft: 10,
+    padding: 30,
     width: 70,
     height: 70,
+    marginTop: 20,
   },
-  buttonText:{
+  buttonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 20,
@@ -374,10 +385,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     margin: 10,
   },
-  carouselImageDog:{
+  carouselImageDog: {
     width: 200,
     height: 200,
     marginHorizontal: 10,
     borderRadius: 85,
+  },
+  addButtonFull: {
+    width: 80,
+    height: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 7,
   }
 });

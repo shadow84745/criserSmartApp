@@ -4,8 +4,7 @@ import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
-import * as ImagePicker from 'expo-image-picker';
+import { addDoc, collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { getDownloadURL, getStorage, ref, uploadBytes, uploadString } from '@firebase/storage';
 import { IDmascotaregistrada, dog_name, dog_ccc, dog_activity, dog_size, dog_stage, dog_weight, edad_can, dog_healthy_conditions, propietary_id, food, food_brand } from './NewPetScreen';
 
@@ -14,7 +13,12 @@ import { Picker } from '@react-native-picker/picker';
 import { getImageExtension, uriToBlob } from '../../utils';
 
 
-const PetPhotoScreen = () => {
+const DogEatingPlanScreen = ({ route, navigation }) => {
+
+    const { dogId } = route.params;
+    const [nutritionPlan, setNutritionPlan] = useState([]);
+    const [dog, setDog] = useState([]);
+
 
     const [race, setRace] = useState('Seleccionar'); // Nuevo estado
     const [dogPhoto, setDogPhoto] = useState("");
@@ -26,48 +30,7 @@ const PetPhotoScreen = () => {
     const [successMessage, setSuccessMessage] = useState('');
 
 
-    const navigation = useNavigation();
-
     const app = initializeApp(firebaseConfig);
-
-
-    const openGallery = async () => {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-        if (permission.granted) {
-            const result = await ImagePicker.launchImageLibraryAsync({
-                allowsEditing: true,
-                aspect: [1, 1],
-            });
-
-            if (!result.canceled) {
-                setDogPhoto(result.assets[0].uri);
-            }
-            console.log(dogPhoto);
-        } else {
-            console.log('Permission to access media library denied');
-        }
-    };
-
-
-
-    const openCamera = async () => {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-        if (permission.granted) {
-            const result = await ImagePicker.launchCameraAsync({
-                allowsEditing: true,
-                aspect: [1, 1], // Establece la relación de aspecto 1:1 para una forma circular
-            });
-
-            if (!result.canceled) {
-                setDogPhoto(result.assets[0].uri);
-            }
-            console.log(dogPhoto);
-        } else {
-            console.log('Permission to access the camera denied');
-        }
-    };
 
 
 
@@ -80,9 +43,41 @@ const PetPhotoScreen = () => {
 
 
 
+    useEffect(() => {
+        const fetchNutritionPlan = async () => {
+            try {
+                const planRef = collection(db, "food_plan");
+                const planQuery = query(planRef, where("dog_id_ref", "==", dogId));
+                const foodPlanDocSnapshot = await getDocs(planQuery);
+
+                if (!foodPlanDocSnapshot.empty) {
+                    const foodPlanData = foodPlanDocSnapshot.docs[0].data();
+                    setNutritionPlan(foodPlanData);
+                }
+            } catch (error) {
+                console.error('Error al obtener el plan nutricional:', error);
+            }
+
+            try {
+                const dogRef = collection(db, "dogs");
+                const dogQuery = query(dogRef, where("dog_id", "==", dogId));
+                const dogDocSnapshot = await getDocs(dogQuery);
+
+                if (!dogDocSnapshot.empty) {
+                    const dogData = dogDocSnapshot.docs[0].data();
+                    setDog(dogData);
+                }
+            } catch (error) {
+                console.error('Error al obtener la informacion del perro:', error);
+            }
+
+        };
+
+        fetchNutritionPlan();
+    }, [dogId]);
 
 
-    const handleRegisterPet = async () => {
+    /*const handleRegisterPetPlan = async () => {
         // Validaciones
         if (
             race === 'Seleccionar' ||
@@ -138,34 +133,29 @@ const PetPhotoScreen = () => {
                 console.log("Plan registro iniciado exitosamente");
                 console.log("Plan registrado con el ID: ", docRefPlan.id);
 
-                setIsButtonVisible(false);
-                setModalVisible(false);
-                setError('');
-                setSuccessMessage('Mascota registrada con éxito');
-
-                setTimeout(() => {
-                    setSuccessMessage('');
-                    navigation.navigate('DogEatingPlan', { dogId: docRef.id });
-                }, 3000);
-                setModalVisible(false);
 
             } catch (error) {
                 console.error('Error al agregar datos a Firestore:', error);
             }
 
+
+            setIsButtonVisible(false);
+            setModalVisible(false);
+            setError('');
+            setSuccessMessage('Mascota registrada con éxito');
+
+            setTimeout(() => {
+                setSuccessMessage('');
+                navigation.navigate('Home');
+            }, 3000);
+            setModalVisible(false);
         } catch (error) {
             console.error("Error al crear la mascota:", error);
         }
-    };
+    }; */
 
-    const pickerRef = useRef();
-
-    function open() {
-        pickerRef.current.focus();
-    }
-
-    function close() {
-        pickerRef.current.blur();
+    function prueba() {
+        console.log(dogId)
     }
 
 
@@ -212,39 +202,56 @@ const PetPhotoScreen = () => {
                     </TouchableOpacity>
                 </View>
                 <View style={styles.sectionTitle}>
-                    <Text style={styles.sectionTitleText}>Registra un nuevo canino</Text>
+                    <Text style={styles.sectionTitleText}>Personaliza tu plan alimenticio</Text>
                 </View>
                 <View style={styles.section}>
                     <View style={styles.inputContainer}>
                         <View style={styles.inputGroup}>
-                            <Text style={styles.descriptionInput}>Reconocimiento de raza</Text>
+                            <Text style={styles.descriptionInput}>Plan alimenticio de {dog.dog_name}</Text>
                         </View>
                         <View style={styles.centeredCameraImageContainer}>
-                            <Image source={require('../../images/cameraImage.png')} style={styles.cameraImage} />
+                            <Image source={dog.photo_can ? { uri: dog.photo_can } : require('../../images/blueCircle.png')} style={styles.cameraImage} />
                         </View>
                     </View>
                 </View>
 
                 <View style={styles.section}>
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.descriptionInput}>Foto de perfil</Text>
+                <View style={styles.inputGroup}>
+                        <Text style={styles.descriptionInput}>Raza</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={styles.imagePreviewContainer}>
-                                {dogPhoto && (
-                                    <Image source={{ uri: dogPhoto }} style={styles.circularImage} />
-                                )}
-                                {!dogPhoto && (
-                                    <Image source={require('../../images/blueCircle.png')} style={styles.circularImage} />
-                                )}
-                            </View>
-                            <View style={styles.buttonsContainer}>
-                                <TouchableOpacity onPress={openGallery} style={styles.galleryButton}>
-                                    <Text style={styles.buttonText}>Abrir galería</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={openCamera} style={styles.cameraButton}>
-                                    <Text style={styles.buttonText}>Abrir cámara</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <Picker
+                                selectedValue={race}
+                                onValueChange={(itemValue, itemIndex) => setRace(itemValue)}
+                                style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
+                            >
+                                <Picker.Item label={dog.race_can} value="Seleccionar" />
+                                <Picker.Item label="Criollo" value="criollo" />
+                                <Picker.Item label="Golden Retriever" value="golden_retriever" />
+                                <Picker.Item label="Beagle" value="beagle" />
+                                <Picker.Item label="Pastor Aleman" value="pastor_aleman" />
+                                <Picker.Item label="Husky" value="husky" />
+                                <Picker.Item label="Chihuahua" value="chihuahua" />
+                                <Picker.Item label="San Bernardo" value="san_bernardo" />
+                            </Picker>
+                        </View>
+                    </View>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.descriptionInput}>Raza</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Picker
+                                selectedValue={race}
+                                onValueChange={(itemValue, itemIndex) => setRace(itemValue)}
+                                style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
+                            >
+                                <Picker.Item label="Seleccionar" value="Seleccionar" />
+                                <Picker.Item label="Criollo" value="criollo" />
+                                <Picker.Item label="Golden Retriever" value="golden_retriever" />
+                                <Picker.Item label="Beagle" value="beagle" />
+                                <Picker.Item label="Pastor Aleman" value="pastor_aleman" />
+                                <Picker.Item label="Husky" value="husky" />
+                                <Picker.Item label="Chihuahua" value="chihuahua" />
+                                <Picker.Item label="San Bernardo" value="san_bernardo" />
+                            </Picker>
                         </View>
                     </View>
                 </View>
@@ -271,7 +278,7 @@ const PetPhotoScreen = () => {
                     </View>
                     <View style={styles.buttonContainer}>
                         {isButtonVisible && (
-                            <TouchableOpacity onPress={handleRegisterPet} style={styles.button}>
+                            <TouchableOpacity onPress={prueba} style={styles.button}>
                                 <Text style={styles.buttonText}>Continuar</Text>
                             </TouchableOpacity>
                         )}
@@ -317,7 +324,7 @@ const PetPhotoScreen = () => {
 };
 
 
-export default PetPhotoScreen;
+export default DogEatingPlanScreen;
 
 const styles = StyleSheet.create({
     container: {

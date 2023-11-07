@@ -26,6 +26,10 @@ const DogDetailScreen = ({ route , navigation}) => {
   const closeModal = () => {
     setModalVisible(false)
   }
+
+  const handlePlanSelect = () => {
+    navigation.navigate('DogEatingPlan', { dogId: dog.dog_id });
+  };
   
 
   return (
@@ -49,6 +53,13 @@ const DogDetailScreen = ({ route , navigation}) => {
         <TouchableOpacity onPress={()=>{setModalVisible(true)}}>
             <Text>
                 Borrar mascota
+            </Text>
+        </TouchableOpacity>
+      </View>
+      <View>
+        <TouchableOpacity onPress={handlePlanSelect}>
+            <Text>
+                Editar plan nutricional
             </Text>
         </TouchableOpacity>
       </View>

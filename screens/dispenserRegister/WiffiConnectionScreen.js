@@ -2,10 +2,13 @@ import React, { Linking, useState, useEffect } from 'react';
 import { ActivityIndicator, Image, StyleSheet, View, Text, FlatList, TextInput, Button, PermissionsAndroid, TouchableOpacity, SafeAreaView, Modal } from 'react-native';
 import WifiManager from 'react-native-wifi-reborn';
 import { initializeApp } from 'firebase/app';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { IDdispositivoregistrado } from './NewDispenserScreen';
+import { device_name, id_device, image, serial_device } from './NewDispenserScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, getReactNativePersistence } from 'firebase/auth';
+
 
 const WiffiConnectionScreen = () => {
   const [wifiList, setWifiList] = useState([]);
@@ -24,10 +27,15 @@ const WiffiConnectionScreen = () => {
   const app = initializeApp(firebaseConfig);
   const navigation = useNavigation();
 
+
+  const auth = getAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+
   const handleContactSupport = () => {
     // Número de teléfono al que se redirigirá
     const phoneNumber = "3184756135";
-    
+
     // Utiliza la función Linking para abrir la aplicación de teléfono con el número
     Linking.openURL(`tel:${phoneNumber}`);
   };
@@ -77,30 +85,55 @@ const WiffiConnectionScreen = () => {
       setModalVisible(false)
       setModal2Visible(true);
 
-      const devicesCollectionRef = collection(db, "devices");
-      const deviceDocRef = doc(devicesCollectionRef, IDdispositivoregistrado);
 
       try {
-        await setDoc(deviceDocRef, {
+        setModalVisible(true);
+
+        const user = auth.currentUser;
+
+
+        // Ya existe un documento en la colección registeredDevices con este deviceSerial, muestra un mensaje de error
+        const docRef = await addDoc(collection(db, "devices"), {
+          device_name: device_name,
+          id_device: id_device,
+          serial_device: serial_device,
+          propietary_id: user.uid,
+          image: image,
           ssid: ssid,
           password: wifiPassword,
           isWEP: false,
           isHidden: false,
+          food_capacity: 0,
+          water_capacity: 0
+        });
+
+        console.log("Dispositivo registrado exitosamente");
+        console.log("Dispositivo registrado con el ID: ", docRef.id);
+
+        const deviceCollectionRef = collection(db, "devices");
+        const deviceDocRef = doc(deviceCollectionRef, docRef.id);
+
+        await setDoc(deviceDocRef, {
+          device_identifier: docRef.id,
         }, { merge: true });
 
-        console.log('Datos agregados a Firestore con éxito');
+        console.log("Se creo el identificador unico exitosamente")
+
 
         setSelectedWifi("");
         setShowWifiConnection(false);
         setConnectionSuccessful(true);
         setModal2Visible(false);
 
+
       } catch (error) {
-        console.error('Error al agregar datos a Firestore:', error);
+        console.error("Error al crear el usuario:", error);
       }
+
     } catch (error) {
       console.log(error);
     }
+
   };
 
   useEffect(() => {

@@ -28,6 +28,12 @@ const RegisterScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
 
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+
+
+
+
   const navigation = useNavigation();
 
   const app = initializeApp(firebaseConfig);
@@ -104,6 +110,13 @@ const RegisterScreen = () => {
 
   // ...
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+  const togglePasswordVisibilityConfirm = () => {
+    setShowPasswordConfirm(!showPasswordConfirm);
+  };
+
 
   const handleCreateAccount = async () => {
     // Validaciones
@@ -134,11 +147,11 @@ const RegisterScreen = () => {
       return;
     }
 
-    if(password.includes(' ')) {
+    if (password.includes(' ')) {
       setError('La contraseña no puede contener espacios en blanco.');
       return;
     }
-    
+
 
     try {
       setModalVisible(true);
@@ -187,9 +200,13 @@ const RegisterScreen = () => {
   };
 
   const onChangeFirstName = (text) => {
-    // Verificar si el valor contiene números
+
+    text = text.replace(/[\s!@#$%^&*+-/;:,.]/g, '');
+    // Verificar si el valor contiene números o espacios en blanco
     if (/\d/.test(text)) {
       setError('El campo de nombre no debe contener números.');
+    } else if (/\s/.test(text)) {
+      setError('No pueden haber espacios en el campo de nombre.');
     } else {
       setError('');
     }
@@ -197,9 +214,12 @@ const RegisterScreen = () => {
   };
 
   const onChangeSecondName = (text) => {
-    // Verificar si el valor contiene números
+    text = text.replace(/[\s!@#$%^&*+-/;:,.]/g, '');
+        // Verificar si el valor contiene números
     if (/\d/.test(text)) {
       setError('El campo de segundo nombre no debe contener números.');
+    } else if (/\s/.test(text)) {
+      setError('No pueden haber espacios en el campo de nombre.');
     } else {
       setError('');
     }
@@ -207,9 +227,12 @@ const RegisterScreen = () => {
   };
 
   const onChangeSurname = (text) => {
+    text = text.replace(/[\s!@#$%^&*+-/;:,.]/g, '');    
     // Verificar si el valor contiene números
     if (/\d/.test(text)) {
       setError('El campo de apellido no debe contener números.');
+    } else if (/\s/.test(text)) {
+      setError('No pueden haber espacios en el campo de apellido.');
     } else {
       setError('');
     }
@@ -217,9 +240,12 @@ const RegisterScreen = () => {
   };
 
   const onChangeSecondSurname = (text) => {
+    text = text.replace(/[\s!@#$%^&*+-/;:,.]/g, '');    
     // Verificar si el valor contiene números
     if (/\d/.test(text)) {
       setError('El campo de segundo apellido no debe contener números.');
+    } else if (/\s/.test(text)) {
+      setError('No pueden haber espacios en el campo de apellido.');
     } else {
       setError('');
     }
@@ -282,6 +308,7 @@ const RegisterScreen = () => {
               style={styles.input}
               value={email}
               onChangeText={text => setEmail(text)}
+              maxLength={45}
             />
             <TextInput
               placeholder="Número de teléfono"
@@ -316,21 +343,40 @@ const RegisterScreen = () => {
               value={username}
               onChangeText={text => setUsername(text)}
               style={styles.input}
+              maxLength={20}
             />
-            <TextInput
-              placeholder="Contraseña"
-              value={password}
-              onChangeText={text => setPassword(text)}
-              style={styles.input}
-              secureTextEntry
-            />
-            <TextInput
-              placeholder="Confirmar contraseña"
-              value={confirmPassword}
-              onChangeText={text => setConfirmPassword(text)}
-              style={styles.input}
-              secureTextEntry
-            />
+            <View style={styles.passwordInputContainer}>
+              <TextInput
+                placeholder="Contraseña"
+                value={password}
+                onChangeText={text => setPassword(text)}
+                style={styles.passwordInput}
+                secureTextEntry={!showPassword}
+                maxLength={35}
+              />
+              <TouchableOpacity onPress={togglePasswordVisibility}>
+                <Image
+                  source={require('../../images/showPass.png')}
+                  style={styles.eyeIcon}
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.passwordInputContainer}>
+              <TextInput
+                placeholder="Confirmar contraseña"
+                value={confirmPassword}
+                onChangeText={text => setConfirmPassword(text)}
+                style={styles.passwordInput}
+                secureTextEntry={!showPasswordConfirm}
+                maxLength={35}
+              />
+              <TouchableOpacity onPress={togglePasswordVisibilityConfirm}>
+                <Image
+                  source={require('../../images/showPass.png')}
+                  style={styles.eyeIcon}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -490,6 +536,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#00B5E2',
     marginTop: 10,
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    marginLeft: -5,
+    alignItems: 'center'
+  },
+  eyeIcon: {
+    width: 20, // Ancho de la imagen del ojo
+    height: 20, // Alto de la imagen del ojo
+    marginLeft: 5,
+    backgroundColor: 'white' // Espacio entre el campo de contraseña y el ícono del ojo
+  },
+  passwordInput: {
+    backgroundColor: '#FFF',
+    color: '#000',
+    flex: 1, // Hace que el input ocupe todo el espacio disponible
+    padding: 10,
+    marginLeft: 5, // Espacio entre el ícono del ojo y el input de contraseña
   },
 });
 

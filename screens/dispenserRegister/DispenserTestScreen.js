@@ -130,10 +130,7 @@ const DispenserTestScreen = () => {
                 <View style={styles.buttonsContainer}>
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            onPress={() => {
-                                setIsDevicePaired(true);
-                                setIsButtonVisible(true);
-                            }}
+                            onPress={() => navigation.navigate('NewPet')}
                             style={styles.buttonEnd}
                         >
                             <Text style={styles.buttonText}>Registrar mascota</Text>
