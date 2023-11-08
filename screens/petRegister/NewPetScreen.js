@@ -417,7 +417,8 @@ const NewPetScreen = () => {
               style={styles.input}
             >
               <Picker.Item label="Seleccionar" value="default" />
-              <Picker.Item label="Vida Activa" value="activa" />
+              <Picker.Item label="Vida Activa" value="muy_activa" />
+              <Picker.Item label="Moderadamente Activa" value="activa" />
               <Picker.Item label="Sedentaria" value="sedentaria" />
               {/* Agrega más opciones según tus necesidades */}
             </Picker>

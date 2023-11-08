@@ -155,7 +155,7 @@ const HomeScreen = () => {
       return (
         <TouchableOpacity  
         style={
-          devices.length === 1 // Verifica si hay otros elementos aparte del botón
+          dogs.length === 1 // Verifica si hay otros elementos aparte del botón
             ? styles.addButtonFull // Estilo cuando no hay otros elementos
             : styles.addButton // Estilo cuando hay otros elementos
         }

@@ -4,10 +4,10 @@ import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { getDownloadURL, getStorage, ref, uploadBytes, uploadString } from '@firebase/storage';
-import { IDmascotaregistrada, dog_name, dog_ccc, dog_activity, dog_size, dog_stage, dog_weight, edad_can, dog_healthy_conditions, propietary_id, food, food_brand } from './NewPetScreen';
+import { dog_name, dog_ccc, dog_activity, dog_size, dog_stage, dog_weight, edad_can, dog_healthy_conditions, food, food_brand } from './NewPetScreen';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
@@ -24,6 +24,9 @@ const PetPhotoScreen = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+
+    const [foodInformation, setFoodInformation] = useState([]);
+
 
 
     const navigation = useNavigation();
@@ -80,8 +83,6 @@ const PetPhotoScreen = () => {
 
 
 
-
-
     const handleRegisterPet = async () => {
         // Validaciones
         if (
@@ -95,13 +96,8 @@ const PetPhotoScreen = () => {
         try {
             setModalVisible(true);
 
-
-            const imageUrl = await uploadImageToStorage(dogPhoto, user.uid);
-
-
             try {
                 const docRef = await addDoc(collection(db, "dogs"), {
-                    photo_can: imageUrl,
                     race_can: race,
                     dog_name: dog_name,
                     dog_ccc: dog_ccc,
@@ -118,36 +114,89 @@ const PetPhotoScreen = () => {
                 console.log("Mascota registrado con el ID: ", docRef.id);
 
 
+
+
+                const imageUrl = await uploadImageToStorage(dogPhoto, user.uid, docRef.id);
+
+
+
                 const dogCollectionRef = collection(db, "dogs");
                 const dogDocRef = doc(dogCollectionRef, docRef.id);
 
+
+
                 await setDoc(dogDocRef, {
                     dog_id: docRef.id,
+                    photo_can: imageUrl,
                 }, { merge: true });
 
                 console.log("Se creo el identificador unico exitosamente")
 
+                //OBTENER INFORMACION DE LA TABLA DE LA MARCA DE COMIDA
 
-                const docRefPlan = await addDoc(collection(db, "food_plan"), {
-                    propietary_id: user.uid,
-                    dog_id_ref: docRef.id,
-                    food: food,
-                    food_brand: food_brand,
-                });
+                console.log("Valor de 'food':", food);
+                console.log("Valor de 'food_brand':", food_brand);
 
-                console.log("Plan registro iniciado exitosamente");
-                console.log("Plan registrado con el ID: ", docRefPlan.id);
+                const foodRef = collection(db, "dog_food");
+                const foodQuery = query(foodRef, where("nombre", "==", food), where("marca", "==", food_brand));
 
-                setIsButtonVisible(false);
-                setModalVisible(false);
-                setError('');
-                setSuccessMessage('Mascota registrada con éxito');
+                const foodDocSnapshot = await getDocs(foodQuery); // Esperar la respuesta de Firestore
 
-                setTimeout(() => {
-                    setSuccessMessage('');
-                    navigation.navigate('DogEatingPlan', { dogId: docRef.id });
-                }, 3000);
-                setModalVisible(false);
+                if (!foodDocSnapshot.empty) {
+                    const foodData = foodDocSnapshot.docs[0].data();
+                    setFoodInformation(foodData);
+
+                    let REM; // Variable para almacenar el valor de REM
+
+                    if (dog_activity === "sedentaria") {
+                        REM = 1.3;
+                    } else if (dog_activity === "activa") {
+                        REM = 1.5;
+                    } else if (dog_activity === "muy_activa") {
+                        REM = 1.8;
+                    } else {
+                        console.log("Hay errores");
+                    }
+
+
+                    // Realizar cálculos con 'calories_per_gram' mientras agregas datos a la base de datos
+                    const MER = 110 * Math.pow(dog_weight, 0.75);
+                    console.log("Las necesidades nutricionales son: " + MER);
+
+
+                    const kcal_day = MER * REM;
+                    console.log("Las kilocalorías diarias totales son: " + kcal_day);
+
+                    console.log("Calories Per Gram:", foodData.calories_per_gram);
+
+                    const grams_day = kcal_day / foodData.calories_per_gram;
+
+                    // Continuar con la creación de datos en Firestore
+                    const docRefPlan = await addDoc(collection(db, "food_plan"), {
+                        propietary_id: user.uid,
+                        dog_id_ref: docRef.id,
+                        food: food,
+                        food_brand: food_brand,
+                        kcal_day: kcal_day,
+                        grams_day: grams_day,
+                        portions_day: 2,
+                    });
+
+                    console.log("Plan registro iniciado exitosamente");
+                    console.log("Plan registrado con el ID: ", docRefPlan.id);
+
+                    setIsButtonVisible(false);
+                    setModalVisible(false);
+                    setError('');
+                    setSuccessMessage('Mascota registrada con éxito');
+
+                    setTimeout(() => {
+                        setSuccessMessage('');
+                        navigation.navigate('DogEatingPlan', { dogId: docRef.id });
+                    }, 3000);
+                } else {
+                    console.log("No se encontró ningún documento en la colección 'dog_food' que coincida con los criterios de búsqueda.");
+                }
 
             } catch (error) {
                 console.error('Error al agregar datos a Firestore:', error);
@@ -169,7 +218,7 @@ const PetPhotoScreen = () => {
     }
 
 
-    const uploadImageToStorage = async (dogPhoto, uid) => {
+    const uploadImageToStorage = async (dogPhoto, uid, IDmascotaRegistrada) => {
         try {
             const storage = getStorage();
             const userUID = user.uid;
@@ -177,9 +226,10 @@ const PetPhotoScreen = () => {
 
             const extension = getImageExtension(dogPhoto);
 
+
             const userStorageRef = ref(storage, `userDogsProfileImage/${userUID}`);
 
-            const imageFileName = `${IDmascotaregistrada}_${user.uid}.${extension}`;
+            const imageFileName = `${IDmascotaRegistrada}_${user.uid}.${extension}`;
 
             const imageRef = ref(userStorageRef, imageFileName);
 

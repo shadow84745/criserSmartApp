@@ -20,14 +20,22 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
     const [dog, setDog] = useState([]);
 
 
-    const [race, setRace] = useState('Seleccionar'); // Nuevo estado
-    const [dogPhoto, setDogPhoto] = useState("");
+    const [horario1, setHorario1] = useState(""); // Almacena los datos del usuario desde Firestore
+    const [horario2, setHorario2] = useState("");
+    const [horario3, setHorario3] = useState("");
+    const [portionsDay, setPortionsDay] = useState("");
+
 
 
     const [isButtonVisible, setIsButtonVisible] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+
+    const [hasOnePortion, setHasOnePortion] = useState(false);
+    const [hasTwoPortion, setHasTwoPortion] = useState(false);
+    const [hasThreePortion, setHasThreePortion] = useState(false);
+
 
 
     const app = initializeApp(firebaseConfig);
@@ -75,6 +83,29 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
 
         fetchNutritionPlan();
     }, [dogId]);
+
+    useEffect(() => {
+        if (portionsDay === 1) {
+            setHasOnePortion(true);
+            setHasTwoPortion(false);
+            setHasThreePortion(false);
+        } else if (portionsDay === 2) {
+            setHasOnePortion(true);
+            setHasTwoPortion(true);
+            setHasThreePortion(false);
+        } else if (portionsDay === 3) {
+            setHasOnePortion(true);
+            setHasTwoPortion(true);
+            setHasThreePortion(true);
+        } else {
+            setHasOnePortion(false);
+            setHasTwoPortion(false);
+            setHasThreePortion(false);
+        }
+    }, [portionsDay]);
+    
+
+
 
 
     /*const handleRegisterPetPlan = async () => {
@@ -154,41 +185,6 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
         }
     }; */
 
-    function prueba() {
-        console.log(dogId)
-    }
-
-
-    const uploadImageToStorage = async (dogPhoto, uid) => {
-        try {
-            const storage = getStorage();
-            const userUID = user.uid;
-
-
-            const extension = getImageExtension(dogPhoto);
-
-            const userStorageRef = ref(storage, `userDogsProfileImage/${userUID}`);
-
-            const imageFileName = `${IDmascotaregistrada}_${user.uid}.${extension}`;
-
-            const imageRef = ref(userStorageRef, imageFileName);
-
-            const blob = await uriToBlob(dogPhoto);
-
-
-
-            await uploadBytes(imageRef, blob, 'data_url', { contentType: "image/jpeg" });
-
-            const downloadUrl = await getDownloadURL(imageRef);
-
-            console.log('Imagen subida con éxito y URL de descarga obtenida:', downloadUrl);
-            return downloadUrl;
-        } catch (error) {
-            console.error('Error al subir la imagen a Storage:', error);
-            return null;
-        }
-    };
-
 
     return (
         <SafeAreaView style={styles.container}>
@@ -216,69 +212,135 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
                 </View>
 
                 <View style={styles.section}>
-                <View style={styles.inputGroup}>
-                        <Text style={styles.descriptionInput}>Raza</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Picker
-                                selectedValue={race}
-                                onValueChange={(itemValue, itemIndex) => setRace(itemValue)}
-                                style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
-                            >
-                                <Picker.Item label={dog.race_can} value="Seleccionar" />
-                                <Picker.Item label="Criollo" value="criollo" />
-                                <Picker.Item label="Golden Retriever" value="golden_retriever" />
-                                <Picker.Item label="Beagle" value="beagle" />
-                                <Picker.Item label="Pastor Aleman" value="pastor_aleman" />
-                                <Picker.Item label="Husky" value="husky" />
-                                <Picker.Item label="Chihuahua" value="chihuahua" />
-                                <Picker.Item label="San Bernardo" value="san_bernardo" />
-                            </Picker>
-                        </View>
-                    </View>
                     <View style={styles.inputGroup}>
-                        <Text style={styles.descriptionInput}>Raza</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Picker
-                                selectedValue={race}
-                                onValueChange={(itemValue, itemIndex) => setRace(itemValue)}
-                                style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
-                            >
-                                <Picker.Item label="Seleccionar" value="Seleccionar" />
-                                <Picker.Item label="Criollo" value="criollo" />
-                                <Picker.Item label="Golden Retriever" value="golden_retriever" />
-                                <Picker.Item label="Beagle" value="beagle" />
-                                <Picker.Item label="Pastor Aleman" value="pastor_aleman" />
-                                <Picker.Item label="Husky" value="husky" />
-                                <Picker.Item label="Chihuahua" value="chihuahua" />
-                                <Picker.Item label="San Bernardo" value="san_bernardo" />
-                            </Picker>
-                        </View>
-                    </View>
-                </View>
+                        <Text style={styles.descriptionInput}>Kilocalorias diarias</Text>
+                        <TextInput
+                            placeholder={nutritionPlan.kcal_day ? nutritionPlan.kcal_day.toString() + " Kilocalorias Diarias" : ''} // Convierte el número a cadena de texto
+                            style={styles.inputUnoNonEditable}
+                            editable={false}
+                        />
+                        <Text style={styles.descriptionInput}>Gramos de comida diarios</Text>
+                        <TextInput
+                            placeholder={nutritionPlan.grams_day ? Math.round(nutritionPlan.grams_day).toString() + " Gramos de comida diarios" : ''} // Redondea el número y luego lo convierte a cadena de texto
+                            style={styles.inputUnoNonEditable}
+                            editable={false}
+                        />
 
-                <View style={styles.section}>
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.descriptionInput}>Raza</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.descriptionInput}>Porciones </Text>
+                        <Picker
+                            selectedValue={portionsDay}
+                            onValueChange={(itemValue, itemIndex) => setPortionsDay(itemValue)}
+                            style={styles.selectorInput}>
+                            <Picker.Item label={nutritionPlan.portions_day
+                                + ' Diarias(Recomendado)'}
+                                value="3" />
+                            <Picker.Item label="1 Diaria" value="1" />
+                            <Picker.Item label="2 Diarias" value="2" />
+                        </Picker>
+                        <Text style={styles.descriptionInput}>Horas de las porciones </Text>
+                        {portionsDay > 0 && (
                             <Picker
-                                selectedValue={race}
-                                onValueChange={(itemValue, itemIndex) => setRace(itemValue)}
+                                selectedValue={horario1}
+                                onValueChange={(itemValue, itemIndex) => setHorario1(itemValue)}
                                 style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
                             >
-                                <Picker.Item label="Seleccionar" value="Seleccionar" />
-                                <Picker.Item label="Criollo" value="criollo" />
-                                <Picker.Item label="Golden Retriever" value="golden_retriever" />
-                                <Picker.Item label="Beagle" value="beagle" />
-                                <Picker.Item label="Pastor Aleman" value="pastor_aleman" />
-                                <Picker.Item label="Husky" value="husky" />
-                                <Picker.Item label="Chihuahua" value="chihuahua" />
-                                <Picker.Item label="San Bernardo" value="san_bernardo" />
+                                <Picker.Item label="Seleccione horario porcion 1" value="Seleccionar" />
+                                <Picker.Item label="1:00am" value="01:00" />
+                                <Picker.Item label="2:00am" value="02:00" />
+                                <Picker.Item label="3:00am" value="03:00" />
+                                <Picker.Item label="4:00am" value="04:00" />
+                                <Picker.Item label="5:00am" value="05:00" />
+                                <Picker.Item label="6:00am" value="06:00" />
+                                <Picker.Item label="7:00am" value="07:00" />
+                                <Picker.Item label="8:00am" value="08:00" />
+                                <Picker.Item label="9:00am" value="09:00" />
+                                <Picker.Item label="10:00am" value="10:00" />
+                                <Picker.Item label="11:00am" value="11:00" />
+                                <Picker.Item label="12:00am" value="12:00" />
+                                <Picker.Item label="1:00pm" value="13:00" />
+                                <Picker.Item label="2:00pm" value="14:00" />
+                                <Picker.Item label="3:00pm" value="15:00" />
+                                <Picker.Item label="4:00pm" value="16:00" />
+                                <Picker.Item label="5:00pm" value="17:00" />
+                                <Picker.Item label="6:00pm" value="18:00" />
+                                <Picker.Item label="7:00pm" value="19:00" />
+                                <Picker.Item label="8:00pm" value="20:00" />
+                                <Picker.Item label="9:00pm" value="21:00" />
+                                <Picker.Item label="10:00pm" value="22:00" />
+                                <Picker.Item label="11:00pm" value="23:00" />
+                                <Picker.Item label="12:00pm" value="24:00" />
                             </Picker>
-                        </View>
+                        )}
+                        {portionsDay > 1  && (
+                            <Picker
+                                selectedValue={horario2}
+                                onValueChange={(itemValue, itemIndex) => setHorario2(itemValue)}
+                                style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
+                            >
+                                <Picker.Item label="Seleccione horario porcion 2" value="Seleccionar" />
+                                <Picker.Item label="1:00am" value="01:00" />
+                                <Picker.Item label="2:00am" value="02:00" />
+                                <Picker.Item label="3:00am" value="03:00" />
+                                <Picker.Item label="4:00am" value="04:00" />
+                                <Picker.Item label="5:00am" value="05:00" />
+                                <Picker.Item label="6:00am" value="06:00" />
+                                <Picker.Item label="7:00am" value="07:00" />
+                                <Picker.Item label="8:00am" value="08:00" />
+                                <Picker.Item label="9:00am" value="09:00" />
+                                <Picker.Item label="10:00am" value="10:00" />
+                                <Picker.Item label="11:00am" value="11:00" />
+                                <Picker.Item label="12:00am" value="12:00" />
+                                <Picker.Item label="1:00pm" value="13:00" />
+                                <Picker.Item label="2:00pm" value="14:00" />
+                                <Picker.Item label="3:00pm" value="15:00" />
+                                <Picker.Item label="4:00pm" value="16:00" />
+                                <Picker.Item label="5:00pm" value="17:00" />
+                                <Picker.Item label="6:00pm" value="18:00" />
+                                <Picker.Item label="7:00pm" value="19:00" />
+                                <Picker.Item label="8:00pm" value="20:00" />
+                                <Picker.Item label="9:00pm" value="21:00" />
+                                <Picker.Item label="10:00pm" value="22:00" />
+                                <Picker.Item label="11:00pm" value="23:00" />
+                                <Picker.Item label="12:00pm" value="24:00" />
+                            </Picker>
+                        )}
+                        {portionsDay > 2  && (
+                            <Picker
+                                selectedValue={horario3}
+                                onValueChange={(itemValue, itemIndex) => setHorario3(itemValue)}
+                                style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
+                            >
+                                <Picker.Item label="Seleccione horario porcion 3" value="Seleccionar" />
+                                <Picker.Item label="1:00am" value="01:00" />
+                                <Picker.Item label="2:00am" value="02:00" />
+                                <Picker.Item label="3:00am" value="03:00" />
+                                <Picker.Item label="4:00am" value="04:00" />
+                                <Picker.Item label="5:00am" value="05:00" />
+                                <Picker.Item label="6:00am" value="06:00" />
+                                <Picker.Item label="7:00am" value="07:00" />
+                                <Picker.Item label="8:00am" value="08:00" />
+                                <Picker.Item label="9:00am" value="09:00" />
+                                <Picker.Item label="10:00am" value="10:00" />
+                                <Picker.Item label="11:00am" value="11:00" />
+                                <Picker.Item label="12:00am" value="12:00" />
+                                <Picker.Item label="1:00pm" value="13:00" />
+                                <Picker.Item label="2:00pm" value="14:00" />
+                                <Picker.Item label="3:00pm" value="15:00" />
+                                <Picker.Item label="4:00pm" value="16:00" />
+                                <Picker.Item label="5:00pm" value="17:00" />
+                                <Picker.Item label="6:00pm" value="18:00" />
+                                <Picker.Item label="7:00pm" value="19:00" />
+                                <Picker.Item label="8:00pm" value="20:00" />
+                                <Picker.Item label="9:00pm" value="21:00" />
+                                <Picker.Item label="10:00pm" value="22:00" />
+                                <Picker.Item label="11:00pm" value="23:00" />
+                                <Picker.Item label="12:00pm" value="24:00" />
+                            </Picker>
+                        )}
                     </View>
                     <View style={styles.buttonContainer}>
                         {isButtonVisible && (
-                            <TouchableOpacity onPress={prueba} style={styles.button}>
+                            <TouchableOpacity style={styles.button}>
                                 <Text style={styles.buttonText}>Continuar</Text>
                             </TouchableOpacity>
                         )}
@@ -494,5 +556,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 40,
         borderRadius: 5,
         marginBottom: 10, // Ajusta el ancho mínimo según tus necesidades
+    },
+    inputUnoNonEditable: {
+        backgroundColor: '#d4d1d0',
+        color: '#000',
+        padding: 10,
+        marginBottom: 20,
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: '#000',
     },
 });
