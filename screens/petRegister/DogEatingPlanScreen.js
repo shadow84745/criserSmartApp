@@ -4,13 +4,11 @@ import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 import { db, firebaseConfig } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { addDoc, collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import { getDownloadURL, getStorage, ref, uploadBytes, uploadString } from '@firebase/storage';
-import { IDmascotaregistrada, dog_name, dog_ccc, dog_activity, dog_size, dog_stage, dog_weight, edad_can, dog_healthy_conditions, propietary_id, food, food_brand } from './NewPetScreen';
+import { addDoc, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { onSnapshot } from 'firebase/firestore';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
-import { getImageExtension, uriToBlob } from '../../utils';
 
 
 const DogEatingPlanScreen = ({ route, navigation }) => {
@@ -18,23 +16,36 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
     const { dogId } = route.params;
     const [nutritionPlan, setNutritionPlan] = useState([]);
     const [dog, setDog] = useState([]);
+    const [dogFood, setDogFood] = useState([]);
 
 
-    const [horario1, setHorario1] = useState(""); // Almacena los datos del usuario desde Firestore
-    const [horario2, setHorario2] = useState("");
-    const [horario3, setHorario3] = useState("");
+
+    const [horario1, setHorario1] = useState("Seleccionar"); // Almacena los datos del usuario desde Firestore
+    const [horario2, setHorario2] = useState("Seleccionar");
+    const [horario3, setHorario3] = useState("Seleccionar");
+
     const [portionsDay, setPortionsDay] = useState("");
+    const [kcal_day, setKcal_day] = useState("");
+    const [nutritionPlanId, setNutritionPlanId] = useState("");
+
+
 
 
 
     const [isButtonVisible, setIsButtonVisible] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
+    const [recomendationsVisible, setRecomendationsVisible] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    const [hasOnePortion, setHasOnePortion] = useState(false);
-    const [hasTwoPortion, setHasTwoPortion] = useState(false);
-    const [hasThreePortion, setHasThreePortion] = useState(false);
+    const openRecomendations = () => {
+        setRecomendationsVisible(true);
+    };
+
+    const closeRecomendations = () => {
+        setRecomendationsVisible(false);
+    };
+
 
 
 
@@ -56,124 +67,126 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
             try {
                 const planRef = collection(db, "food_plan");
                 const planQuery = query(planRef, where("dog_id_ref", "==", dogId));
-                const foodPlanDocSnapshot = await getDocs(planQuery);
+                const foodPlanSnapshot = await getDocs(planQuery);
 
-                if (!foodPlanDocSnapshot.empty) {
-                    const foodPlanData = foodPlanDocSnapshot.docs[0].data();
+                if (!foodPlanSnapshot.empty) {
+                    const foodPlanData = foodPlanSnapshot.docs[0].data();
                     setNutritionPlan(foodPlanData);
+
+                    setPortionsDay(foodPlanData.portions_day); // Actualiza portions_day directamente
+
+                    const nutritionPlanId = foodPlanSnapshot.docs[0].id;
+
+                    // Guardar el identificador único en el estado o donde lo necesites
+                    setNutritionPlanId(nutritionPlanId);
+                    
+
+                    const dogRef = collection(db, "dogs");
+                    const dogQuery = query(dogRef, where("dog_id", "==", dogId));
+                    const dogSnapshot = await getDocs(dogQuery);
+
+                    if (!dogSnapshot.empty) {
+                        const dogData = dogSnapshot.docs[0].data();
+                        setDog(dogData);
+
+                        if (foodPlanData.food) {
+                            const nombreComida = foodPlanData.food;
+                            const dogFoodRef = collection(db, "dog_food");
+                            const dogFoodQuery = query(dogFoodRef, where("nombre", "==", nombreComida));
+                            const dogFoodSnapshot = await getDocs(dogFoodQuery);
+
+                            if (!dogFoodSnapshot.empty) {
+                                const dogFoodData = dogFoodSnapshot.docs[0].data();
+                                setDogFood(dogFoodData);
+                                console.log("Datos obtenidos correctamente");
+                            }
+                        }
+                    }
                 }
             } catch (error) {
-                console.error('Error al obtener el plan nutricional:', error);
+                console.error('Error al obtener la información:', error);
             }
-
-            try {
-                const dogRef = collection(db, "dogs");
-                const dogQuery = query(dogRef, where("dog_id", "==", dogId));
-                const dogDocSnapshot = await getDocs(dogQuery);
-
-                if (!dogDocSnapshot.empty) {
-                    const dogData = dogDocSnapshot.docs[0].data();
-                    setDog(dogData);
-                }
-            } catch (error) {
-                console.error('Error al obtener la informacion del perro:', error);
-            }
-
         };
-
         fetchNutritionPlan();
     }, [dogId]);
 
-    useEffect(() => {
-        if (portionsDay === 1) {
-            setHasOnePortion(true);
-            setHasTwoPortion(false);
-            setHasThreePortion(false);
-        } else if (portionsDay === 2) {
-            setHasOnePortion(true);
-            setHasTwoPortion(true);
-            setHasThreePortion(false);
-        } else if (portionsDay === 3) {
-            setHasOnePortion(true);
-            setHasTwoPortion(true);
-            setHasThreePortion(true);
-        } else {
-            setHasOnePortion(false);
-            setHasTwoPortion(false);
-            setHasThreePortion(false);
-        }
-    }, [portionsDay]);
-    
 
 
 
 
-    /*const handleRegisterPetPlan = async () => {
+
+    const handleUpdatePetPlan = async () => {
         // Validaciones
-        if (
-            race === 'Seleccionar' ||
-            dogPhoto === ""
-        ) {
-            setError('Todos los campos son obligatorios y no pueden estar vacíos');
-            return;
-        }
-
+        
         try {
-            setModalVisible(true);
 
+            const planDocRef = doc(db, 'food_plan', nutritionPlanId);
 
-            const imageUrl = await uploadImageToStorage(dogPhoto, user.uid);
+            const updatedData = {};
 
-
-            try {
-                const docRef = await addDoc(collection(db, "dogs"), {
-                    photo_can: imageUrl,
-                    race_can: race,
-                    dog_name: dog_name,
-                    dog_ccc: dog_ccc,
-                    dog_size: dog_size,
-                    dog_stage: dog_stage,
-                    dog_weight: dog_weight,
-                    dog_activity: dog_activity,
-                    dog_healthy_conditions: dog_healthy_conditions,
-                    edad_can: edad_can,
-                    propietary_id: user.uid,
-                });
-
-                console.log("Mascota registrada exitosamente");
-                console.log("Mascota registrado con el ID: ", docRef.id);
-
-
-                const dogCollectionRef = collection(db, "dogs");
-                const dogDocRef = doc(dogCollectionRef, docRef.id);
-
-                await setDoc(dogDocRef, {
-                    dog_id: docRef.id,
-                }, { merge: true });
-
-                console.log("Se creo el identificador unico exitosamente")
-
-
-                const docRefPlan = await addDoc(collection(db, "food_plan"), {
-                    propietary_id: user.uid,
-                    dog_id_ref: docRef.id,
-                    food: food,
-                    food_brand: food_brand,
-                });
-
-                console.log("Plan registro iniciado exitosamente");
-                console.log("Plan registrado con el ID: ", docRefPlan.id);
-
-
-            } catch (error) {
-                console.error('Error al agregar datos a Firestore:', error);
+            if (kcal_day !== "") {
+                updatedData.kcal_day = kcal_day;
+                updatedData.grams_day = kcal_day / dogFood.calories_per_gram;
+            } else {
+                updatedData.kcal_day = nutritionPlan.kcal_day;
             }
+
+
+
+            if (horario1 !== "Seleccionar") {
+                updatedData.meal_schedule_1 = horario1;
+            } else {
+                updatedData.meal_schedule_1 = nutritionPlan.meal_schedule_1;
+                setHorario1(nutritionPlan.meal_schedule_1);
+            }
+
+            if (horario2 !== "Seleccionar") {
+                updatedData.meal_schedule_2 = horario2;
+            } else {
+                updatedData.meal_schedule_2 = nutritionPlan.meal_schedule_2;
+                setHorario2(nutritionPlan.meal_schedule_2);
+            }
+
+            if (horario3 !== "Seleccionar") {
+                updatedData.meal_schedule_3 = horario3;
+            } else {
+                updatedData.meal_schedule_3 = nutritionPlan.meal_schedule_3;
+                setHorario3(nutritionPlan.meal_schedule_3);
+            }
+
+            if (portionsDay !== nutritionPlan.portions_day) {
+                updatedData.portions_day = portionsDay;
+            } else {
+                updatedData.portions_day = nutritionPlan.portions_day;
+            }
+
+            if (portionsDay === 2) {
+                updatedData.meal_schedule_3 = "";
+            } else if (portionsDay === 1) {
+                updatedData.meal_schedule_2 = ""
+                updatedData.meal_schedule_3 = ""
+            }
+
+
+            //Validaciones 
+
+            if (horario1==="Seleccionar" || horario2==="Seleccionar" || horario3==="Seleccionar") {
+                setError('Todos los campos son obligatorios. Por favor, completa la información.');
+                return;
+    
+            }
+
+
+
+
+            await updateDoc(planDocRef, updatedData);
 
 
             setIsButtonVisible(false);
             setModalVisible(false);
             setError('');
-            setSuccessMessage('Mascota registrada con éxito');
+            console.log('Plan actualizado con exito');
+            setSuccessMessage('Plan actualizado con exito');
 
             setTimeout(() => {
                 setSuccessMessage('');
@@ -181,9 +194,12 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
             }, 3000);
             setModalVisible(false);
         } catch (error) {
-            console.error("Error al crear la mascota:", error);
+            setModalVisible(false);
+            console.error('Error al subir datos a Firestore:', error);
         }
-    }; */
+    };
+
+
 
 
     return (
@@ -206,7 +222,7 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
                             <Text style={styles.descriptionInput}>Plan alimenticio de {dog.dog_name}</Text>
                         </View>
                         <View style={styles.centeredCameraImageContainer}>
-                            <Image source={dog.photo_can ? { uri: dog.photo_can } : require('../../images/blueCircle.png')} style={styles.cameraImage} />
+                            <Image source={dog.photo_can ? { uri: dog.photo_can } : require('../../images/blueCircle.png')} style={styles.circularImage} />
                         </View>
                     </View>
                 </View>
@@ -215,9 +231,11 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
                     <View style={styles.inputGroup}>
                         <Text style={styles.descriptionInput}>Kilocalorias diarias</Text>
                         <TextInput
-                            placeholder={nutritionPlan.kcal_day ? nutritionPlan.kcal_day.toString() + " Kilocalorias Diarias" : ''} // Convierte el número a cadena de texto
-                            style={styles.inputUnoNonEditable}
-                            editable={false}
+                            placeholder={nutritionPlan.kcal_day ? Math.round(nutritionPlan.kcal_day).toString() + " Kilocalorias Diarias (RECOMENDADO)" : ''} // Convierte el número a cadena de texto
+                            style={styles.input}
+                            value={kcal_day}
+                            keyboardType="numeric"
+                            onChangeText={text => setKcal_day(text)}
                         />
                         <Text style={styles.descriptionInput}>Gramos de comida diarios</Text>
                         <TextInput
@@ -227,16 +245,38 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
                         />
 
                         <Text style={styles.descriptionInput}>Porciones </Text>
-                        <Picker
-                            selectedValue={portionsDay}
-                            onValueChange={(itemValue, itemIndex) => setPortionsDay(itemValue)}
-                            style={styles.selectorInput}>
-                            <Picker.Item label={nutritionPlan.portions_day
-                                + ' Diarias(Recomendado)'}
-                                value="3" />
-                            <Picker.Item label="1 Diaria" value="1" />
-                            <Picker.Item label="2 Diarias" value="2" />
-                        </Picker>
+                        {dog.dog_stage === "adulto" ? (
+                            <Picker
+                                selectedValue={portionsDay}
+                                onValueChange={(itemValue, itemIndex) => setPortionsDay(itemValue)}
+                                style={styles.selectorInput}
+                            >
+                                <Picker.Item label="2 Diarias (RECOMENDADO)" value={2} />
+                                <Picker.Item label="1 Diaria" value={1} />
+                                <Picker.Item label="3 Diarias" value={3} />
+                            </Picker>
+                        ) : dog.dog_stage === "cachorro" ? (
+                            <Picker
+                                selectedValue={portionsDay}
+                                onValueChange={(itemValue, itemIndex) => setPortionsDay(itemValue)}
+                                style={styles.selectorInput}
+                            >
+                                <Picker.Item label="3 Diarias(RECOMENDADO)" value={3} />
+                                <Picker.Item label="1 (NO SE RECOMIENDA PARA CACHORROS)" value={1} />
+                                <Picker.Item label="2 Diarias" value={2} />
+                            </Picker>
+                        ) : (
+                            <Picker
+                                selectedValue={portionsDay}
+                                onValueChange={(itemValue, itemIndex) => setPortionsDay(itemValue)}
+                                style={styles.selectorInput}
+                            >
+                                <Picker.Item label="2 Diarias (RECOMENDADO)" value={2} />
+                                <Picker.Item label="1 Diaria" value={1} />
+                                <Picker.Item label="3 Diarias" value={3} />
+                            </Picker>
+                        )}
+
                         <Text style={styles.descriptionInput}>Horas de las porciones </Text>
                         {portionsDay > 0 && (
                             <Picker
@@ -244,107 +284,125 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
                                 onValueChange={(itemValue, itemIndex) => setHorario1(itemValue)}
                                 style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
                             >
-                                <Picker.Item label="Seleccione horario porcion 1" value="Seleccionar" />
-                                <Picker.Item label="1:00am" value="01:00" />
-                                <Picker.Item label="2:00am" value="02:00" />
-                                <Picker.Item label="3:00am" value="03:00" />
-                                <Picker.Item label="4:00am" value="04:00" />
-                                <Picker.Item label="5:00am" value="05:00" />
-                                <Picker.Item label="6:00am" value="06:00" />
-                                <Picker.Item label="7:00am" value="07:00" />
-                                <Picker.Item label="8:00am" value="08:00" />
-                                <Picker.Item label="9:00am" value="09:00" />
-                                <Picker.Item label="10:00am" value="10:00" />
-                                <Picker.Item label="11:00am" value="11:00" />
-                                <Picker.Item label="12:00am" value="12:00" />
-                                <Picker.Item label="1:00pm" value="13:00" />
-                                <Picker.Item label="2:00pm" value="14:00" />
-                                <Picker.Item label="3:00pm" value="15:00" />
-                                <Picker.Item label="4:00pm" value="16:00" />
-                                <Picker.Item label="5:00pm" value="17:00" />
-                                <Picker.Item label="6:00pm" value="18:00" />
-                                <Picker.Item label="7:00pm" value="19:00" />
-                                <Picker.Item label="8:00pm" value="20:00" />
-                                <Picker.Item label="9:00pm" value="21:00" />
-                                <Picker.Item label="10:00pm" value="22:00" />
-                                <Picker.Item label="11:00pm" value="23:00" />
-                                <Picker.Item label="12:00pm" value="24:00" />
+                                <Picker.Item
+                                    label={nutritionPlan.meal_schedule_1 ? nutritionPlan.meal_schedule_1 + " (Actual)" : "Seleccione horario porcion 1"}
+                                    value={nutritionPlan.meal_schedule_1 ? nutritionPlan.meal_schedule_1 : "Seleccionar"}
+                                />
+                                <Picker.Item label="01:00" value="01:00" />
+                                <Picker.Item label="02:00" value="02:00" />
+                                <Picker.Item label="03:00" value="03:00" />
+                                <Picker.Item label="04:00" value="04:00" />
+                                <Picker.Item label="05:00" value="05:00" />
+                                <Picker.Item label="06:00" value="06:00" />
+                                <Picker.Item label="07:00" value="07:00" />
+                                <Picker.Item label="08:00" value="08:00" />
+                                <Picker.Item label="09:00" value="09:00" />
+                                <Picker.Item label="10:00" value="10:00" />
+                                <Picker.Item label="11:00" value="11:00" />
+                                <Picker.Item label="12:00" value="12:00" />
+                                <Picker.Item label="13:00" value="13:00" />
+                                <Picker.Item label="14:00" value="14:00" />
+                                <Picker.Item label="15:00" value="15:00" />
+                                <Picker.Item label="16:00" value="16:00" />
+                                <Picker.Item label="17:00" value="17:00" />
+                                <Picker.Item label="18:00" value="18:00" />
+                                <Picker.Item label="19:00" value="19:00" />
+                                <Picker.Item label="20:00" value="20:00" />
+                                <Picker.Item label="21:00" value="21:00" />
+                                <Picker.Item label="22:00" value="22:00" />
+                                <Picker.Item label="23:00" value="23:00" />
+                                <Picker.Item label="24:00" value="24:00" />
                             </Picker>
                         )}
-                        {portionsDay > 1  && (
+                        {portionsDay > 1 && (
                             <Picker
                                 selectedValue={horario2}
                                 onValueChange={(itemValue, itemIndex) => setHorario2(itemValue)}
                                 style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
                             >
-                                <Picker.Item label="Seleccione horario porcion 2" value="Seleccionar" />
-                                <Picker.Item label="1:00am" value="01:00" />
-                                <Picker.Item label="2:00am" value="02:00" />
-                                <Picker.Item label="3:00am" value="03:00" />
-                                <Picker.Item label="4:00am" value="04:00" />
-                                <Picker.Item label="5:00am" value="05:00" />
-                                <Picker.Item label="6:00am" value="06:00" />
-                                <Picker.Item label="7:00am" value="07:00" />
-                                <Picker.Item label="8:00am" value="08:00" />
-                                <Picker.Item label="9:00am" value="09:00" />
-                                <Picker.Item label="10:00am" value="10:00" />
-                                <Picker.Item label="11:00am" value="11:00" />
-                                <Picker.Item label="12:00am" value="12:00" />
-                                <Picker.Item label="1:00pm" value="13:00" />
-                                <Picker.Item label="2:00pm" value="14:00" />
-                                <Picker.Item label="3:00pm" value="15:00" />
-                                <Picker.Item label="4:00pm" value="16:00" />
-                                <Picker.Item label="5:00pm" value="17:00" />
-                                <Picker.Item label="6:00pm" value="18:00" />
-                                <Picker.Item label="7:00pm" value="19:00" />
-                                <Picker.Item label="8:00pm" value="20:00" />
-                                <Picker.Item label="9:00pm" value="21:00" />
-                                <Picker.Item label="10:00pm" value="22:00" />
-                                <Picker.Item label="11:00pm" value="23:00" />
-                                <Picker.Item label="12:00pm" value="24:00" />
+                                <Picker.Item
+                                    label={nutritionPlan.meal_schedule_2 ? nutritionPlan.meal_schedule_2 + " (Actual)" : "Seleccione horario porcion 2"}
+                                    value={nutritionPlan.meal_schedule_2 ? nutritionPlan.meal_schedule_2 : "Seleccionar"}
+                                />
+                                <Picker.Item label="01:00" value="01:00" />
+                                <Picker.Item label="02:00" value="02:00" />
+                                <Picker.Item label="03:00" value="03:00" />
+                                <Picker.Item label="04:00" value="04:00" />
+                                <Picker.Item label="05:00" value="05:00" />
+                                <Picker.Item label="06:00" value="06:00" />
+                                <Picker.Item label="07:00" value="07:00" />
+                                <Picker.Item label="08:00" value="08:00" />
+                                <Picker.Item label="09:00" value="09:00" />
+                                <Picker.Item label="10:00" value="10:00" />
+                                <Picker.Item label="11:00" value="11:00" />
+                                <Picker.Item label="12:00" value="12:00" />
+                                <Picker.Item label="13:00" value="13:00" />
+                                <Picker.Item label="14:00" value="14:00" />
+                                <Picker.Item label="15:00" value="15:00" />
+                                <Picker.Item label="16:00" value="16:00" />
+                                <Picker.Item label="17:00" value="17:00" />
+                                <Picker.Item label="18:00" value="18:00" />
+                                <Picker.Item label="19:00" value="19:00" />
+                                <Picker.Item label="20:00" value="20:00" />
+                                <Picker.Item label="21:00" value="21:00" />
+                                <Picker.Item label="22:00" value="22:00" />
+                                <Picker.Item label="23:00" value="23:00" />
+                                <Picker.Item label="24:00" value="24:00" />
                             </Picker>
+
+
                         )}
-                        {portionsDay > 2  && (
+                        {portionsDay > 2 && (
                             <Picker
                                 selectedValue={horario3}
                                 onValueChange={(itemValue, itemIndex) => setHorario3(itemValue)}
                                 style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
                             >
-                                <Picker.Item label="Seleccione horario porcion 3" value="Seleccionar" />
-                                <Picker.Item label="1:00am" value="01:00" />
-                                <Picker.Item label="2:00am" value="02:00" />
-                                <Picker.Item label="3:00am" value="03:00" />
-                                <Picker.Item label="4:00am" value="04:00" />
-                                <Picker.Item label="5:00am" value="05:00" />
-                                <Picker.Item label="6:00am" value="06:00" />
-                                <Picker.Item label="7:00am" value="07:00" />
-                                <Picker.Item label="8:00am" value="08:00" />
-                                <Picker.Item label="9:00am" value="09:00" />
-                                <Picker.Item label="10:00am" value="10:00" />
-                                <Picker.Item label="11:00am" value="11:00" />
-                                <Picker.Item label="12:00am" value="12:00" />
-                                <Picker.Item label="1:00pm" value="13:00" />
-                                <Picker.Item label="2:00pm" value="14:00" />
-                                <Picker.Item label="3:00pm" value="15:00" />
-                                <Picker.Item label="4:00pm" value="16:00" />
-                                <Picker.Item label="5:00pm" value="17:00" />
-                                <Picker.Item label="6:00pm" value="18:00" />
-                                <Picker.Item label="7:00pm" value="19:00" />
-                                <Picker.Item label="8:00pm" value="20:00" />
-                                <Picker.Item label="9:00pm" value="21:00" />
-                                <Picker.Item label="10:00pm" value="22:00" />
-                                <Picker.Item label="11:00pm" value="23:00" />
-                                <Picker.Item label="12:00pm" value="24:00" />
+                                <Picker.Item
+                                    label={nutritionPlan.meal_schedule_3 ? nutritionPlan.meal_schedule_3 + " (Actual)" : "Seleccione horario porcion 3"}
+                                    value={nutritionPlan.meal_schedule_3 ? nutritionPlan.meal_schedule_3 : "Seleccionar"}
+                                />
+                                <Picker.Item label="01:00" value="01:00" />
+                                <Picker.Item label="02:00" value="02:00" />
+                                <Picker.Item label="03:00" value="03:00" />
+                                <Picker.Item label="04:00" value="04:00" />
+                                <Picker.Item label="05:00" value="05:00" />
+                                <Picker.Item label="06:00" value="06:00" />
+                                <Picker.Item label="07:00" value="07:00" />
+                                <Picker.Item label="08:00" value="08:00" />
+                                <Picker.Item label="09:00" value="09:00" />
+                                <Picker.Item label="10:00" value="10:00" />
+                                <Picker.Item label="11:00" value="11:00" />
+                                <Picker.Item label="12:00" value="12:00" />
+                                <Picker.Item label="13:00" value="13:00" />
+                                <Picker.Item label="14:00" value="14:00" />
+                                <Picker.Item label="15:00" value="15:00" />
+                                <Picker.Item label="16:00" value="16:00" />
+                                <Picker.Item label="17:00" value="17:00" />
+                                <Picker.Item label="18:00" value="18:00" />
+                                <Picker.Item label="19:00" value="19:00" />
+                                <Picker.Item label="20:00" value="20:00" />
+                                <Picker.Item label="21:00" value="21:00" />
+                                <Picker.Item label="22:00" value="22:00" />
+                                <Picker.Item label="23:00" value="23:00" />
+                                <Picker.Item label="24:00" value="24:00" />
                             </Picker>
                         )}
                     </View>
                     <View style={styles.buttonContainer}>
                         {isButtonVisible && (
-                            <TouchableOpacity style={styles.button}>
-                                <Text style={styles.buttonText}>Continuar</Text>
+                            <TouchableOpacity style={styles.button} onPress={handleUpdatePetPlan}>
+                                <Text style={styles.buttonText}>Actualizar</Text>
                             </TouchableOpacity>
                         )}
                     </View>
+
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity style={styles.buttonRecomendations} onPress={openRecomendations}>
+                            <Text style={styles.buttonText}>Recomendaciones</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <View>
                         {error ? <Text style={styles.errorText}>{error}</Text> : null}
                         {successMessage ? <Text style={styles.successText}>{successMessage}</Text> : null}
@@ -377,6 +435,17 @@ const DogEatingPlanScreen = ({ route, navigation }) => {
                         <View style={styles.modalContent}>
                             <ActivityIndicator size="large" color="#00B5E2" />
                             <Text style={styles.modalText}>Realizando registro...</Text>
+                        </View>
+                    </View>
+                </Modal>
+
+                <Modal animationType='fade' transparent={true} visible={recomendationsVisible}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <TouchableOpacity onPress={closeRecomendations} style={styles.closeButton}>
+                                <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
+                            </TouchableOpacity>
+                            <Text style={styles.modalText}>Recomendaciones</Text>
                         </View>
                     </View>
                 </Modal>
@@ -458,6 +527,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 40,
         borderRadius: 5,
     },
+    buttonRecomendations: {
+        backgroundColor: '#F1C400',
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        borderRadius: 5,
+    },
     buttonText: {
         color: '#FFF',
         fontSize: 18,
@@ -494,7 +569,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 10,
-        color: '#fff',
+        color: '#000',
     },
     inputContainer: {
         justifyContent: 'space-between',
@@ -565,5 +640,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         borderWidth: 1,
         borderColor: '#000',
+    },
+    closeIcon: {
+        width: 50,
+        height: 50,
     },
 });

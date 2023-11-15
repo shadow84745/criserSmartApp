@@ -171,6 +171,22 @@ const PetPhotoScreen = () => {
 
                     const grams_day = kcal_day / foodData.calories_per_gram;
 
+                    let portions_day;
+                    let meal_schedule_1 = "";
+                    let meal_schedule_2 = "";
+                    let meal_schedule_3 = "";
+
+                    if (dog_stage === "cachorro") {
+                        portions_day = 3;
+                        meal_schedule_1 = "07:00";
+                        meal_schedule_2 = "14:00";
+                        meal_schedule_3 = "19:00";
+                    } else {
+                        portions_day = 2;
+                        meal_schedule_1 = "10:00";
+                        meal_schedule_2 = "19:00";
+                    }
+
                     // Continuar con la creación de datos en Firestore
                     const docRefPlan = await addDoc(collection(db, "food_plan"), {
                         propietary_id: user.uid,
@@ -179,7 +195,12 @@ const PetPhotoScreen = () => {
                         food_brand: food_brand,
                         kcal_day: kcal_day,
                         grams_day: grams_day,
-                        portions_day: 2,
+                        portions_day: portions_day,
+                        mer: MER,
+                        meal_schedule_1: meal_schedule_1,
+                        meal_schedule_2: meal_schedule_2,
+                        meal_schedule_3: meal_schedule_3,
+                        //physical_state:,
                     });
 
                     console.log("Plan registro iniciado exitosamente");
@@ -222,6 +243,7 @@ const PetPhotoScreen = () => {
         try {
             const storage = getStorage();
             const userUID = user.uid;
+
 
 
             const extension = getImageExtension(dogPhoto);

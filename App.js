@@ -20,6 +20,7 @@ import DeviceDetailScreen from './screens/visualInterfaces/DeviceDetailScreen';
 import PetPhotoScreen from './screens/petRegister/PetPhotoScreen';
 import DogDetailScreen from './screens/visualInterfaces/DogDetailScreen';
 import DogEatingPlanScreen from './screens/petRegister/DogEatingPlanScreen';
+import UpdateDogInfoScreen from './screens/visualInterfaces/UpdateDogInfoScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -47,6 +48,7 @@ export default function App() {
         <Stack.Screen name="DogDetail" component={DogDetailScreen} options={{ headerShown: false }} />
         <Stack.Screen name="PetPhoto" component={PetPhotoScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DogEatingPlan" component={DogEatingPlanScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="UpdateDogInfo" component={UpdateDogInfoScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

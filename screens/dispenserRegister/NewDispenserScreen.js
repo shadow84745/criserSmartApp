@@ -103,7 +103,7 @@ const NewDispenserScreen = () => {
             setIsButtonVisible(false);
             setModalVisible(false);
             setError('');
-            setSuccessMessage('Dispositivo registrado con éxito');
+            setSuccessMessage('Registro inicializado con éxito');
 
             setTimeout(() => {
               setSuccessMessage('');

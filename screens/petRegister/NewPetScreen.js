@@ -366,6 +366,7 @@ const NewPetScreen = () => {
                 style={styles.selectorInput} // Ajusta el estilo del Picker según tus necesidades
               >
                 <Picker.Item label="Seleccionar" value="Seleccionar" />
+                <Picker.Item label="Mini Toy" value="mini" />
                 <Picker.Item label="Pequeño" value="pequeño" />
                 <Picker.Item label="Mediano" value="mediano" />
                 <Picker.Item label="Grande" value="grande" />
@@ -517,7 +518,7 @@ const NewPetScreen = () => {
         >
           <View style={styles.modalContainer}>
             <Text style={styles.modalText}>¿Como puedo saber cual es el tamaño de mi mascota?</Text>
-            <Image source={require('../../images/tamañosInfo.png')} style={styles.imagenTamaño} />
+            <Image source={require('../../images/tamañoInfo2.png')} style={styles.imagenTamaño} />
             <TouchableOpacity onPress={() => setModalTamaño(false)} style={styles.closeButton}>
               <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
             </TouchableOpacity>
@@ -531,7 +532,8 @@ const NewPetScreen = () => {
         >
           <View style={styles.modalContainer}>
             <Text style={styles.modalText}>¿Como puedo saber cual es la etapa de mi mascota?</Text>
-            <Image source={require('../../images/etapaInfo.png')} style={styles.imagenEtapa} />
+            <Image source={require('../../images/etapaInfo2cut1.png')} style={styles.imagenEtapa} />
+            <Image source={require('../../images/etapaInfo2cut2.png')} style={styles.imagenEtapa} />
             <TouchableOpacity onPress={() => setModalEtapa(false)} style={styles.closeButton}>
               <Image source={require('../../images/closeButton.png')} style={styles.closeIcon} />
             </TouchableOpacity>
@@ -675,10 +677,6 @@ const styles = StyleSheet.create({
     color: '#00B5E2',
     marginTop: 10,
   },
-  inputSection: {
-    width: '50%',
-    padding: 5,
-  },
   inputContainer: {
     justifyContent: 'space-between',
   },
@@ -711,7 +709,8 @@ const styles = StyleSheet.create({
     height: 50,
   },
   imagenEtapa: {
-    width: 390, // Ajusta el ancho según tus necesidades
+    marginVertical:5,
+    width: 350, // Ajusta el ancho según tus necesidades
     height: 240, // Ajusta el alto según tus necesidades
     resizeMode: 'cover', // Ajusta el modo de redimensionamiento
   },
