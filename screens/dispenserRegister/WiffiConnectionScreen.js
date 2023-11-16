@@ -8,6 +8,8 @@ import { useNavigation } from '@react-navigation/native';
 import { device_name, id_device, image, serial_device } from './NewDispenserScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, getReactNativePersistence } from 'firebase/auth';
+import DeviceInfo from 'react-native-device-info';
+
 
 
 const WiffiConnectionScreen = () => {
@@ -53,11 +55,23 @@ const WiffiConnectionScreen = () => {
             buttonPositive: 'OK',
           },
         );
+    
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           console.log('Location permission granted');
-          loadWifiList();
+    
+          // Verificar si el GPS está habilitado
         } else {
           console.log('Location permission denied');
+        }
+
+        if (await DeviceInfo.isLocationEnabled()) {
+          console.log('Location is enabled');
+          // Ubicación habilitada, carga la lista de Wi-Fi
+          loadWifiList();
+        } else {
+          console.log('Location is not enabled');
+          // Ubicación deshabilitada, muestra un mensaje al usuario
+          alert('Por favor, activa la ubicación para encontrar redes Wi-Fi.(Una vez que la actives presiona "Actualizar redes wifi")');
         }
       } catch (err) {
         console.warn(err);
@@ -77,6 +91,7 @@ const WiffiConnectionScreen = () => {
 
   const connectToWifi = async () => {
     try {
+
       const ssid = selectedWifi.SSID;
       const wifiPassword = password;
 
@@ -84,6 +99,7 @@ const WiffiConnectionScreen = () => {
       console.log('Conexion Wi-Fi exitosa');
       setModalVisible(false)
       setModal2Visible(true);
+
 
 
       try {

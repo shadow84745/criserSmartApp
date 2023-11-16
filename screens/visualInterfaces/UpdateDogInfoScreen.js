@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Image, View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { getAuth, currentUser, updateProfile } from 'firebase/auth';
 import { getDoc, doc, updateDoc } from 'firebase/firestore';
@@ -6,6 +6,12 @@ import { db } from '../../firebaseConfig'; // Asegúrate de importar tu instanci
 import { useNavigation } from '@react-navigation/native';
 import { dogId } from './DogDetailScreen';
 import { Picker } from '@react-native-picker/picker';
+import { getDownloadURL, getStorage, ref, uploadBytes, uploadString } from '@firebase/storage';
+import { getImageExtension, uriToBlob } from '../../utils';
+import * as ImagePicker from 'expo-image-picker';
+
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UpdateDogInfoScreen = () => {
 
@@ -24,6 +30,8 @@ const UpdateDogInfoScreen = () => {
     const [isAdmin, setIsAdmin] = useState(false); // Nuevo estado para verificar si es administrador
     const [adminMessageShown, setAdminMessageShown] = useState(false); // Nuevo estado para controlar el mensaje
     const [modalVisible, setModalVisible] = useState(false);
+    const [dogPhoto, setDogPhoto] = useState("");
+
 
 
     //ESTAN DESHABILITADAS YA QUE SON DATOS NO MODIFICABLES POR EL USUARIO
@@ -72,13 +80,62 @@ const UpdateDogInfoScreen = () => {
         }
     }, [isAdmin, adminMessageShown]);
 
+
+    const openGallery = async () => {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (permission.granted) {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                allowsEditing: true,
+                aspect: [1, 1],
+            });
+
+            if (!result.canceled) {
+                setDogPhoto(result.assets[0].uri);
+            }
+            console.log(dogPhoto);
+        } else {
+            console.log('Permission to access media library denied');
+        }
+    };
+
+    const openCamera = async () => {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+        if (permission.granted) {
+            const result = await ImagePicker.launchCameraAsync({
+                allowsEditing: true,
+                aspect: [1, 1], // Establece la relación de aspecto 1:1 para una forma circular
+            });
+
+            if (!result.canceled) {
+                setDogPhoto(result.assets[0].uri);
+            }
+            console.log(dogPhoto);
+        } else {
+            console.log('Permission to access the camera denied');
+        }
+    };
+
+
     const updateProfileInfo = async () => {
         try {
+
+            const photoDownloadUrl = dogPhoto
+                ? await updateImageToStorage(dogPhoto, user.uid)
+                : null;
+
+
             setModalVisible(true)
-            const docRef = doc(db, 'users', user.uid);
+            const docRef = doc(db, 'dogs', dogId);
 
             const updatedData = {}; // Crear un objeto para almacenar los datos actualizados
 
+            if (dogPhoto !== "") {
+                updatedData.photo_can = photoDownloadUrl;
+            } else {
+                updatedData.photo_can = userData.photo_can;
+            }
             if (dogName !== "") {
                 updatedData.dog_name = dogName;
             } else {
@@ -90,38 +147,38 @@ const UpdateDogInfoScreen = () => {
             } else {
                 updatedData.dog_weight = userData.dog_weight;
             }
-            
-            if (dogSize !== "Seleccionar") {
+
+            if (dogSize !== "") {
                 updatedData.dog_size = dogSize;
             } else {
                 updatedData.dog_size = userData.dog_size;
             }
 
-            if (dogRace !== "Seleccionar") {
+            if (dogRace !== "") {
                 updatedData.race_can = dogRace;
             } else {
                 updatedData.race_can = userData.race_can;
             }
 
-            if (dogStage !== "Seleccionar") {
+            if (dogStage !== "") {
                 updatedData.dog_stage = dogStage;
             } else {
                 updatedData.dog_stage = userData.dog_stage;
             }
 
-            if (cccCalificacion !== "Seleccionar") {
+            if (cccCalificacion !== "") {
                 updatedData.dog_ccc = cccCalificacion;
             } else {
                 updatedData.dog_ccc = userData.dog_ccc;
             }
 
-            if (dog_healthy_conditions !== "Seleccionar") {
+            if (dog_healthy_conditions !== "") {
                 updatedData.dog_healthy_conditions = dog_healthy_conditions;
             } else {
                 updatedData.dog_healthy_conditions = userData.dog_healthy_conditions;
             }
 
-            if (dog_activity !== "Seleccionar") {
+            if (dog_activity !== "") {
                 updatedData.dog_activity = dog_activity;
             } else {
                 updatedData.dog_activity = userData.dog_activity;
@@ -130,8 +187,13 @@ const UpdateDogInfoScreen = () => {
             await updateDoc(docRef, updatedData);
 
             // Actualización exitosa, establece el estado de éxito en true
-            setModalVisible(false);
             setUpdateSuccess(true);
+
+            setTimeout(() => {
+                navigation.navigate('Home');
+              }, 1500);
+              setModalVisible(false);
+
         } catch (error) {
             setModalVisible(false);
             console.error('Error al subir datos a Firestore:', error);
@@ -143,6 +205,17 @@ const UpdateDogInfoScreen = () => {
         // o es una cadena vacía.
         return text === '' || /^[A-Za-z]+$/.test(text);
     };
+
+    const pickerRef = useRef();
+
+    function open() {
+        pickerRef.current.focus();
+    }
+
+    function close() {
+        pickerRef.current.blur();
+    }
+
 
     const getActivityLabel = (activity) => {
         switch (activity) {
@@ -156,8 +229,8 @@ const UpdateDogInfoScreen = () => {
                 return activity;
         }
     };
-    
-    
+
+
     const getDiseaseLabel = (disease) => {
         switch (disease) {
             case 'ninguna':
@@ -187,7 +260,7 @@ const UpdateDogInfoScreen = () => {
                 return disease;
         }
     };
-    
+
 
 
     const getRaceLabel = (race) => {
@@ -229,7 +302,41 @@ const UpdateDogInfoScreen = () => {
                 return size;
         }
     };
-    
+
+
+    const updateImageToStorage = async (dogPhoto, uid) => {
+        try {
+            const storage = getStorage();
+            const userUID = user.uid;
+            const IDmascotaRegistrada = userData.dog_id;
+
+
+            const extension = getImageExtension(dogPhoto);
+
+
+            const userStorageRef = ref(storage, `userDogsProfileImage/${userUID}`);
+
+            const imageFileName = `${IDmascotaRegistrada}_${user.uid}.${extension}`;
+
+            const imageRef = ref(userStorageRef, imageFileName);
+
+            const blob = await uriToBlob(dogPhoto);
+
+
+
+            await uploadBytes(imageRef, blob, 'data_url', { contentType: "image/jpeg" });
+
+            const downloadUrl = await getDownloadURL(imageRef);
+
+            console.log('Imagen subida con éxito y URL de descarga obtenida:', downloadUrl);
+            return downloadUrl;
+        } catch (error) {
+            console.error('Error al subir la imagen a Storage:', error);
+            return null;
+        }
+    };
+
+
 
 
 
@@ -339,6 +446,7 @@ const UpdateDogInfoScreen = () => {
 
                 <Text style={styles.label}>Condiciones de Salud</Text>
                 <Picker
+                    ref={pickerRef}
                     selectedValue={dog_healthy_conditions}
                     onValueChange={(itemValue, itemIndex) => setDog_healthy_conditions(itemValue)}
                     style={styles.selectorInput}
@@ -371,6 +479,29 @@ const UpdateDogInfoScreen = () => {
                     {/* Agrega más opciones según tus necesidades */}
                 </Picker>
 
+
+                <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Foto de perfil</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={styles.imagePreviewContainer}>
+                            {dogPhoto && (
+                                <Image source={{ uri: dogPhoto }} style={styles.circularImage} />
+                            )}
+                            {!dogPhoto && userData.photo_can && (
+                                <Image source={{ uri: userData.photo_can }} style={styles.circularImage} />
+                            )}
+                        </View>
+
+                        <View style={styles.buttonsContainer}>
+                            <TouchableOpacity onPress={openGallery} style={styles.galleryButton}>
+                                <Text style={styles.buttonText}>Abrir galería</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={openCamera} style={styles.cameraButton}>
+                                <Text style={styles.buttonText}>Abrir cámara</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
 
                 {!updateSuccess && (
                     <TouchableOpacity style={styles.button} onPress={updateProfileInfo}>
@@ -543,6 +674,34 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         color: '#00B5E2',
+    },
+    circularImage: {
+        width: 150,
+        height: 150,
+        borderRadius: 75, // Esto hará que la imagen tenga forma circular
+        marginVertical: 20,
+    }, imagePreviewContainer: {
+        flex: 1, // La imagen ocupa la mitad izquierda de la sección
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    galleryButton: {
+        // Puedes establecer un ancho mínimo o fijo para el botón "Abrir galería"
+        minWidth: 150,
+        backgroundColor: '#00B5E2',
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        borderRadius: 5,
+        marginBottom: 10, // Ajusta el ancho mínimo según tus necesidades
+    },
+    cameraButton: {
+        // Establece un ancho mínimo o fijo para el botón "Abrir cámara" para que coincida con el botón "Abrir galería"
+        minWidth: 150,
+        backgroundColor: '#00B5E2',
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        borderRadius: 5,
+        marginBottom: 10, // Ajusta el ancho mínimo según tus necesidades
     },
 
 });

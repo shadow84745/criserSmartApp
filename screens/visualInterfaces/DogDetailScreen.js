@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, TextInput, ScrollView } from 'react-native';
 import { doc, deleteDoc, query, collection, where, getDocs } from "firebase/firestore";
-import { db } from '../../firebaseConfig';
+import { db, firebaseConfig } from '../../firebaseConfig';
 import { deleteObject, getStorage, ref } from 'firebase/storage';
+import { getAuth, onAuthStateChanged, getReactNativePersistence } from "firebase/auth";
+import { initializeApp } from 'firebase/app';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 
 let dogId;
 
+
 const DogDetailScreen = ({ route, navigation }) => {
+
+
+  const [dogFood, setDogFood] = useState([]);
+  const [nutritionPlan, setNutritionPlan] = useState([]);
+  const [foodInformation, setFoodInformation] = useState([]);
+
+
+
   // Recupera los datos del dispositivo seleccionado de las propiedades de navegación
   const { dog } = route.params;
 
@@ -15,6 +28,32 @@ const DogDetailScreen = ({ route, navigation }) => {
   const [chargeModal, setChargeModal] = useState(false);
 
   dogId = dog.dog_id;
+
+
+  useEffect(() => {
+    const fetchNutritionPlan = async () => {
+      try {
+        const planRef = collection(db, "food_plan");
+        const planQuery = query(planRef, where("dog_id_ref", "==", dog.dog_id));
+        const foodPlanSnapshot = await getDocs(planQuery);
+
+        if (!foodPlanSnapshot.empty) {
+          const foodPlanData = foodPlanSnapshot.docs[0].data();
+          setNutritionPlan(foodPlanData);
+        }
+      } catch (error) {
+        console.error('Error al obtener la información:', error);
+      }
+    };
+
+    fetchNutritionPlan();
+// Esta función de limpieza se ejecutará al desmontar el componente
+  }, [dogId]);
+
+
+
+
+
 
   const handleDeleteDog = async () => {
     const dogRef = dog.dog_id;
@@ -66,6 +105,30 @@ const DogDetailScreen = ({ route, navigation }) => {
   };
 
 
+
+  const getRaceLabel = (race) => {
+    switch (race) {
+      case 'criollo':
+        return 'Criollo';
+      case 'golden_retriever':
+        return 'Golden Retriever';
+      case 'beagle':
+        return 'Beagle *';
+      case 'pastor_aleman':
+        return 'Pastor Alemán';
+      case 'husky':
+        return 'Husky *';
+      case 'chihuahua':
+        return 'Chihuahua';
+      case 'san_bernardo *':
+        return 'San Bernardo';
+      // Agrega más casos según tus necesidades
+      default:
+        return race;
+    }
+  };
+
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -82,103 +145,119 @@ const DogDetailScreen = ({ route, navigation }) => {
         <Text style={styles.sectionTitleText}>Perfil de mascota</Text>
       </View>
 
-      <View style={styles.section}>
-        <View style={styles.dogSectionTitle}>
-          <Text style={styles.deviceName}>{dog.dog_name}</Text>
-        </View>
-        <View style={styles.dogSection}>
-          <View>
-            <Image source={{ uri: dog.photo_can }} style={styles.dogImage} />
+      <ScrollView>
+        <View style={styles.section}>
+          <View style={styles.dogSectionTitle}>
+            <Text style={styles.deviceName}>{dog.dog_name}</Text>
           </View>
-          <View style={{ maxWidth: 200, marginLeft: 10 }}>
+          <View style={styles.dogSection}>
+            <View>
+              <Image source={{ uri: dog.photo_can }} style={styles.dogImage} />
+            </View>
+            <View style={{ maxWidth: 200, marginLeft: 10 }}>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>Recomendaciones</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+          <View style={styles.dogSectionTitle}>
+            <Text style={{ fontSize: 22, color: 'white', fontWeight: 'bold' }}>Estado: Peso normal</Text>
+          </View>
+        </View>
+
+
+        <View style={styles.sectionDogInfo}>
+          <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+            <Image source={require('../../images/graficaEJ.png')} style={styles.graphicImage} />
+          </View>
+
+          <Text style={styles.titleInput}>Datos del can:</Text>
+
+          <View style={styles.inputContainer}>
+            <View style={styles.inputGroup}>
+              <View style={{ flexDirection: 'column', marginHorizontal: 10 }}>
+                <Text style={styles.descriptionInput}>Edad:</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={dog.edad_can}
+                  editable={false}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <View style={{ flexDirection: 'column', marginHorizontal: 10 }}>
+                <Text style={styles.descriptionInput}>Etapa de crecimiento:</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={dog.dog_stage}
+                  editable={false}
+                />
+              </View>
+            </View>
+
+
+            <View style={styles.inputGroup}>
+              <View style={{ flexDirection: 'column', marginHorizontal: 10 }}>
+                <Text style={styles.descriptionInput}>Peso:</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={dog.dog_weight.toString()}
+                  editable={false}
+                />
+              </View>
+              <View style={{ flexDirection: 'column', marginHorizontal: 10 }}>
+                <Text style={styles.descriptionInput}>Raza:</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={getRaceLabel(dog.race_can)}
+                  editable={false}
+                />
+              </View>
+            </View>
+          </View>
+          <View>
+
+          </View>
+        </View>
+
+
+
+
+
+
+        {/*opciones*/}
+        <View style={styles.sectionButtons}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Recomendaciones</Text>
+              <TouchableOpacity style={styles.buttonUpdate} onPress={handleUpdate}>
+                <Text style={styles.buttonText}>
+                  Actualizar datos
+                </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-        <View style={styles.dogSectionTitle}>
-          <Text style={{ fontSize: 22, color: 'white', fontWeight: 'bold' }}>Estado: Peso normal</Text>
-        </View>
-      </View>
-
-
-      <View style={styles.sectionDogInfo}>
-        <View style={styles.inputContainer}>
-          <View style={styles.inputGroup}>
-            <View style={{ flexDirection: 'column', marginHorizontal: 10 }}>
-              <Text style={styles.descriptionInput}>Edad:</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={dog.edad_can}
-                editable={false}
-              />
-            </View>
-            <View style={{ flexDirection: 'column', marginHorizontal: 10 }}>
-              <Text style={styles.descriptionInput}>Peso:</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={dog.dog_weight.toString()}
-                editable={false}
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <View style={{ flexDirection: 'column', marginHorizontal: 10 }}>
-              <Text style={styles.descriptionInput}>Edad:</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={dog.edad_can}
-                editable={false}
-              />
-            </View>
-            <View style={{ flexDirection: 'column', marginHorizontal: 10 }}>
-              <Text style={styles.descriptionInput}>Raza:</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={dog.race_can.charAt(0).toUpperCase() + dog.race_can.slice(1)}
-                editable={false}
-              />
-            </View>
-
-          </View>
-        </View>
-        <View>
-
-        </View>
-      </View>
-
-
-
-
-
-
-      {/*opciones*/}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={handleUpdate}>
-            <Text style={styles.buttonText}>
-              Actualizar datos
-            </Text>
-          </TouchableOpacity>
-        </View>
-        {/*<View style={styles.buttonContainer}>
+            {/*<View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={() => { setModalVisible(true) }}>
             <Text style={styles.buttonText}>
               Borrar mascota
             </Text>
           </TouchableOpacity>
-  </View>*/}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={handlePlanSelect}>
-            <Text style={styles.buttonText}>
-              Plan nutricional
-            </Text>
-          </TouchableOpacity>
+          </View>*/}
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.buttonPlan} onPress={handlePlanSelect}>
+                <Text style={styles.buttonText}>
+                  Plan nutricional
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
+
+
+      </ScrollView>
 
 
       {/* Seccion de modales */}
@@ -224,6 +303,7 @@ const DogDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#ddd'
   },
   dogSection: {
     alignItems: 'center',
@@ -254,6 +334,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: 'white'
   },
   logo: {
     width: 100,
@@ -307,6 +388,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#00B5E2',
     paddingBottom: 10,
     marginBottom: 10,
+    backgroundColor: 'white'
   },
   sectionTitleText: {
     fontSize: 24,
@@ -323,9 +405,24 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     alignItems: 'center',
+    marginHorizontal: 5,
   },
   button: {
     backgroundColor: '#F1C400',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    alignItems: 'center',
+  },
+  buttonUpdate: {
+    backgroundColor: '#00B5E2',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    alignItems: 'center',
+  },
+  buttonPlan: {
+    backgroundColor: '#0071A4',
     paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 15,
@@ -354,6 +451,10 @@ const styles = StyleSheet.create({
     padding: 10,
     borderColor: '#000',
     borderWidth: 1,
+    justifyContent: 'center',
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '500'
   },
   inputContainer: {
     justifyContent: 'space-between',
@@ -369,6 +470,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  graphicImage: {
+    width: 150,
+    height: 100
+  },
+  titleInput: {
+    color: '#00B5E2',
+    fontSize: 25,
+    fontWeight: 'bold',
+    textShadowColor: 'black',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 5,
+    textAlign: 'center',
+    margin: -3,
+    textDecorationLine: 'underline',
+    marginTop: 8,
+    marginBottom: 4
+  },
+  sectionButtons: {
+    backgroundColor: "#ddd",
+    paddingHorizontal: 30,
+    paddingVertical: 20,
+    marginVertical: 5,
+    marginBottom: -10,
+    paddingBottom: 40
   }
 });
 
