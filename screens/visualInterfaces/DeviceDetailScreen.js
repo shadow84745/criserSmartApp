@@ -1,31 +1,40 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Modal, Button } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { collection, deleteDoc, doc, getDocs, query, where } from '@firebase/firestore';
 import { db } from '../../firebaseConfig';
+import { AjustesModal, ConfirmDeleteModal, RecomendacionesModal } from './hooks/DeviceModals';
+
+let deviceID;
+
 
 
 const DeviceDetailScreen = ({ route, navigation }) => {
   // Recupera los datos del dispositivo seleccionado de las propiedades de navegación
   const { device } = route.params;
 
-  const [recomendationsVisible, setrecomendationsVisible] = useState(false);
-
+  const [recomendationsVisible, setRecomendationsVisible] = useState(false);
+  const [ajustesVisible, setAjustesVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+
+
   const [modelData, setModelData] = useState([]);
 
 
-  const recomendaciones = () =>{
-    setrecomendationsVisible(true)
-  }
-  const CloseRecomendaciones = () =>{
-    setrecomendationsVisible(false)
-  }
-  const closeModal = () => {
-    setModalVisible(false)
-  }
+  // useCallback para evitar re-creaciones innecesarias
+  const openRecomendations = useCallback(() => setRecomendationsVisible(true), []);
+  const closeRecomendations = useCallback(() => setRecomendationsVisible(false), []);
 
-  const handleDeleteDevice = async () => {
+  const openAjustes = useCallback(() => setAjustesVisible(true), []);
+  const closeAjustes = useCallback(() => setAjustesVisible(false), []);
+
+  const openModal = useCallback(() => setModalVisible(true), []);
+  const closeModal = useCallback(() => setModalVisible(false), []);
+
+  const editDevice = useCallback(() => navigation.navigate("UpdateDeviceInfo"), []);
+
+  deviceID = device.device_identifier;
+
+  const handleDeleteDevice = useCallback(async () => {
     const deviceRef = device.device_identifier;
     try {
       await deleteDoc(doc(db, "devices", deviceRef));
@@ -34,7 +43,7 @@ const DeviceDetailScreen = ({ route, navigation }) => {
     } catch (error) {
       console.log("erros al tratar de borrar el documento" + error)
     }
-  }
+  }, [device.device_identifier, navigation]);
 
 
   useEffect(() => {
@@ -52,6 +61,7 @@ const DeviceDetailScreen = ({ route, navigation }) => {
         console.error('Error al obtener el plan nutricional:', error);
       }
 
+      
       /* try {
           const dogRef = collection(db, "dogs");
           const dogQuery = query(dogRef, where("dog_id", "==", dogId));
@@ -86,161 +96,136 @@ const DeviceDetailScreen = ({ route, navigation }) => {
         <Text style={styles.sectionTitleText}>{modelData.name}</Text>
       </View>
 
-      <View style={styles.section}>
-        <View style={styles.dispenserSectionTitle}>
-          <Text style={styles.deviceName}>{device.device_name}</Text>
-        </View>
-        <View style={styles.dispenserSection}>
-          <View style={styles.dispenser}>
-            <Image source={{ uri: device.image }} style={styles.deviceImage} />
-            <Text style={{
-              fontSize: 20,
-              fontWeight: 'bold',
-              color: '#fff'
-            }}
-            >
-              Estado: </Text>
+      <ScrollView>
+        <View style={styles.section}>
+          <View style={styles.dispenserSectionTitle}>
+            <Text style={styles.deviceName}>{device.device_name}</Text>
           </View>
-          <View style={{ maxWidth: 170 }}>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Dispensar Racion</Text>
-                <Image source={require('../../images/turnOnIcon.png')} style={{ width: 50, height: 50 }} />
-              </TouchableOpacity>
+          <View style={styles.dispenserSection}>
+            <View style={styles.dispenser}>
+              <Image source={{ uri: device.image }} style={styles.deviceImage} />
+              <Text style={{
+                fontSize: 20,
+                fontWeight: 'bold',
+                color: '#fff'
+              }}
+              >
+                Estado: </Text>
+            </View>
+            <View style={{ maxWidth: 170 }}>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>Dispensar Racion</Text>
+                  <Image source={require('../../images/turnOnIcon.png')} style={{ width: 50, height: 50 }} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
-      </View>
 
-      {/*SECCION DE LA INFORMACION */}
-
-
-      <View style={styles.sectionInformation}>
-        <View style={styles.dispenserSection}>
-          <View style={styles.dispenser}>
-            <Text style={{
-              fontSize: 20,
-              fontWeight: 'bold',
-              color: '#fff'
-            }}
-            >
-              Comida en reserva </Text>
-            <Image source={require('../../images/dogFood.png')} style={{ width: 180, height: 180 }} />
-            {device.food_capacity > 80 && (
-              <Image source={require('../../images/battery-100.png')} style={{ width: 150, height: 50 }} />
-            )}
-            {device.food_capacity > 50 && device.food_capacity <= 80 && (
-              <Image source={require('../../images/battery-75.png')} style={{ width: 150, height: 50 }} />
-            )}
-            {device.food_capacity > 30 && device.food_capacity <= 50 && (
-              <Image source={require('../../images/battery-50.png')} style={{ width: 150, height: 50 }} />
-            )}
-            {device.food_capacity > 10 && device.food_capacity <= 30 && (
-              <Image source={require('../../images/battery-25.png')} style={{ width: 150, height: 50 }} />
-            )}
-            {device.food_capacity <= 10 && (
-              <Image source={require('../../images/battery-0.png')} style={{ width: 150, height: 50 }} />
-            )}
-            <Text style={{
-              fontSize: 20,
-              fontWeight: 'bold',
-              color: '#fff'
-            }}
-            >
-              {device.food_capacity}%</Text>
+        <View style={styles.sectionInformation}>
+          <View style={styles.dispenserSection}>
+            <View style={styles.dispenser}>
+              <Text style={{
+                fontSize: 20,
+                fontWeight: 'bold',
+                color: '#fff'
+              }}
+              >
+                Comida en reserva </Text>
+              <Image source={require('../../images/dogFood.png')} style={{ width: 180, height: 180 }} />
+              {device.food_capacity > 80 && (
+                <Image source={require('../../images/battery-100.png')} style={{ width: 150, height: 50 }} />
+              )}
+              {device.food_capacity > 50 && device.food_capacity <= 80 && (
+                <Image source={require('../../images/battery-75.png')} style={{ width: 150, height: 50 }} />
+              )}
+              {device.food_capacity > 30 && device.food_capacity <= 50 && (
+                <Image source={require('../../images/battery-50.png')} style={{ width: 150, height: 50 }} />
+              )}
+              {device.food_capacity > 10 && device.food_capacity <= 30 && (
+                <Image source={require('../../images/battery-25.png')} style={{ width: 150, height: 50 }} />
+              )}
+              {device.food_capacity <= 10 && (
+                <Image source={require('../../images/battery-0.png')} style={{ width: 150, height: 50 }} />
+              )}
+              <Text style={{
+                fontSize: 20,
+                fontWeight: 'bold',
+                color: '#fff'
+              }}
+              >
+                {device.food_capacity}%</Text>
+            </View>
+            <View style={styles.dispenser}>
+              <Text style={{
+                fontSize: 20,
+                fontWeight: 'bold',
+                color: '#fff'
+              }}
+              >
+                Agua en reserva </Text>
+              <Image source={require('../../images/waterDog.png')} style={{ width: 180, height: 180 }} />
+              {device.water_capacity > 80 && (
+                <Image source={require('../../images/battery-100.png')} style={{ width: 150, height: 50, margin: 5 }} />
+              )}
+              {device.water_capacity > 50 && device.water_capacity <= 80 && (
+                <Image source={require('../../images/battery-75.png')} style={{ width: 150, height: 50, margin: 5 }} />
+              )}
+              {device.water_capacity > 30 && device.water_capacity <= 50 && (
+                <Image source={require('../../images/battery-50.png')} style={{ width: 150, height: 50, margin: 5 }} />
+              )}
+              {device.water_capacity > 10 && device.water_capacity <= 30 && (
+                <Image source={require('../../images/battery-25.png')} style={{ width: 150, height: 50, margin: 5 }} />
+              )}
+              {device.water_capacity <= 10 && (
+                <Image source={require('../../images/battery-0.png')} style={{ width: 150, height: 50, margin: 5 }} />
+              )}
+              <Text style={{
+                fontSize: 20,
+                fontWeight: 'bold',
+                color: '#fff'
+              }}
+              >
+                {device.water_capacity}%</Text>
+            </View>
           </View>
-          <View style={styles.dispenser}>
-            <Text style={{
-              fontSize: 20,
-              fontWeight: 'bold',
-              color: '#fff'
-            }}
-            >
-              Agua en reserva </Text>
-            <Image source={require('../../images/waterDog.png')} style={{ width: 180, height: 180 }} />
-            {device.water_capacity > 80 && (
-              <Image source={require('../../images/battery-100.png')} style={{ width: 150, height: 50, margin: 5 }} />
-            )}
-            {device.water_capacity > 50 && device.water_capacity <= 80 && (
-              <Image source={require('../../images/battery-75.png')} style={{ width: 150, height: 50, margin: 5 }} />
-            )}
-            {device.water_capacity > 30 && device.water_capacity <= 50 && (
-              <Image source={require('../../images/battery-50.png')} style={{ width: 150, height: 50, margin: 5 }} />
-            )}
-            {device.water_capacity > 10 && device.water_capacity <= 30 && (
-              <Image source={require('../../images/battery-25.png')} style={{ width: 150, height: 50, margin: 5 }} />
-            )}
-            {device.water_capacity <= 10 && (
-              <Image source={require('../../images/battery-0.png')} style={{ width: 150, height: 50, margin: 5 }} />
-            )}
-            <Text style={{
-              fontSize: 20,
-              fontWeight: 'bold',
-              color: '#fff'
-            }}
-            >
-              {device.water_capacity}%</Text>
-          </View>
-        </View>
-        <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={recomendaciones} style={styles.buttonRecomendations}>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity onPress={openRecomendations} style={styles.buttonRecomendations}>
               <Text style={styles.buttonText}>Recomendaciones</Text>
             </TouchableOpacity>
-        </View>
-      </View>
-      <View>
-        <TouchableOpacity onPress={() => { setModalVisible(true) }}>
-          <Text>
-            Borrar dispositivo
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={closeModal}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>¿Está seguro de que desea eliminar esta dispositivo?</Text>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={closeModal}
-            >
-              <Text style={styles.modalButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalButtonExit}
-              onPress={handleDeleteDevice}
-            >
-              <Text style={styles.modalButtonText}>Eliminar</Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={recomendationsVisible}
-        onRequestClose={CloseRecomendaciones}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>Recomendaciones para su dispensador:</Text>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={CloseRecomendaciones}
-            >
-              <Text style={styles.modalButtonText}>Cerrar</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity onPress={openAjustes} style={styles.buttonConfig}>
+              <Text style={styles.buttonText}>Ajustes</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+
+      </ScrollView>
+
+      {/*Seccion de los modales*/}
+
+      <AjustesModal
+        visible={ajustesVisible}
+        onClose={closeAjustes}
+        onDelete={openModal}
+        onEdit={editDevice} // Abre el modal de confirmación para borrar
+      />
+      <ConfirmDeleteModal
+        visible={modalVisible}
+        onClose={closeModal}
+        onConfirm={handleDeleteDevice}
+      />
+      <RecomendacionesModal
+        visible={recomendationsVisible}
+        onClose={closeRecomendations}
+      />
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -336,7 +321,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingVertical: 20,
     marginVertical: 5,
-    marginBottom:-10
+    marginBottom: -10
   },
   sectionInformation: {
     backgroundColor: "#F1C400",
@@ -349,6 +334,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     alignItems: 'center',
+    marginVertical: 5,
   },
   button: {
     backgroundColor: '#F1C400',
@@ -366,13 +352,21 @@ const styles = StyleSheet.create({
   dispenser: {
     alignItems: 'center',
   },
-  buttonRecomendations:{
+  buttonRecomendations: {
+    backgroundColor: '#0071A4',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 15,
+    alignItems: 'center',
+  },
+  buttonConfig: {
     backgroundColor: '#00B5E2',
     paddingVertical: 10,
     paddingHorizontal: 25,
     borderRadius: 15,
     alignItems: 'center',
-  }
+  },
 });
 
+export {deviceID};
 export default DeviceDetailScreen;
