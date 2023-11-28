@@ -19,6 +19,8 @@ const UpdateDeviceInfoScreen = () => {
     const [updateSuccess, setUpdateSuccess] = useState(false); // Estado para el mensaje de éxito
     const [modalVisible, setModalVisible] = useState(false);
     const [deviceSerial, setDeviceSerial] = useState("");
+    const [selectedDogName, setSelectedDogName] = useState(''); // Agregado para almacenar el nombre de la mascota seleccionada
+
 
 
     const navigation = useNavigation();
@@ -63,11 +65,34 @@ const UpdateDeviceInfoScreen = () => {
                     const dogNamesPromises = querySnapshot.docs.map(async (planDoc) => {
                         const dogRef = doc(db, 'dogs', planDoc.data().dog_id_ref);
                         const dogSnap = await getDoc(dogRef);
-                        return dogSnap.exists() ? { id: planDoc.id, name: dogSnap.data().dog_name } : null;
+                        if (dogSnap.exists()) {
+                            // Retorna un objeto que tiene el nombre de la mascota y el ID del plan alimenticio
+                            return {
+                                planId: planDoc.id, // El ID del documento de food_plan
+                                dogName: dogSnap.data().dog_name // El nombre de la mascota
+                            };
+                        }
+                        return null;
                     });
 
                     const dogsData = await Promise.all(dogNamesPromises);
                     setPlanData(dogsData.filter(Boolean)); // Filtrar los nulos
+
+                    if (userData.food_plan_ref === 'default') {
+                        setSelectedDogName('Por favor seleccione un plan'); // Mensaje para el usuario
+                        setPlan('Seleccionar');
+                    } else if (userData.food_plan_ref && userData.food_plan_ref !== 'Seleccionar') {
+                        const planRef = doc(db, 'food_plan', userData.food_plan_ref);
+                        const planSnap = await getDoc(planRef);
+                        if (planSnap.exists()) {
+                            const dogRef = doc(db, 'dogs', planSnap.data().dog_id_ref);
+                            const dogSnap = await getDoc(dogRef);
+                            if (dogSnap.exists()) {
+                                setSelectedDogName(dogSnap.data().dog_name); // Establecer el nombre de la mascota
+                                setPlan(userData.food_plan_ref); // Establecer el plan seleccionado
+                            }
+                        }
+                    }
 
                 } catch (error) {
                     console.error('Error al obtener los datos de los planes:', error);
@@ -79,11 +104,12 @@ const UpdateDeviceInfoScreen = () => {
         if (user) {
             fetchDeviceData();
         }
-    }, [user]);
+    }, [user, userData.food_plan_ref]);
 
 
     const handlePlanChange = (itemValue, itemIndex) => {
         setPlan(itemValue);
+        console.log(itemValue);
     };
 
     const updateProfileInfo = async () => {
@@ -105,6 +131,11 @@ const UpdateDeviceInfoScreen = () => {
             } else {
                 updatedData.device_name = userData.device_name;
             }
+            if (plan !== "Seleccionar") {
+                updatedData.food_plan_ref = plan;
+            } else {
+                updatedData.food_plan_ref = userData.food_plan_ref;
+            }
 
 
 
@@ -123,13 +154,10 @@ const UpdateDeviceInfoScreen = () => {
             console.error('Error al subir datos a Firestore:', error);
         }
     };
-
     const validateInput = (text) => {
-        // Utiliza una expresión regular para comprobar que el texto no contiene espacios ni números,
-        // o es una cadena vacía.
-        return text === '' || /^[A-Za-z]+$/.test(text);
+        const numericRegex = /^[0-9]*$/; // Expresión regular que coincide solo con números
+        return numericRegex.test(text);
     };
-
 
 
 
@@ -155,17 +183,13 @@ const UpdateDeviceInfoScreen = () => {
                     placeholder={userData.device_name}
                     style={styles.inputUno}
                     value={deviceName}
-                    onChangeText={(text) => {
-                        if (validateInput(text)) {
-                            setDeviceName(text);
-                        }
-                    }}
+                    onChangeText={(text) => { setDeviceName(text); }}
                     maxLength={20}
                 />
 
                 <Text style={styles.label}>Modelo del dispositivo(serial):</Text>
                 <TextInput
-                    placeholder={userData.device_name}
+                    placeholder={userData.serial_device}
                     style={styles.inputUno}
                     value={deviceSerial}
                     keyboardType="numeric"
@@ -174,8 +198,7 @@ const UpdateDeviceInfoScreen = () => {
                             setDeviceSerial(text);
                         }
                     }}
-                    maxLength={20}
-
+                    maxLength={15}
                 />
 
 
@@ -183,15 +206,18 @@ const UpdateDeviceInfoScreen = () => {
                     <Text style={styles.label}>Selecciona Plan Alimenticio:</Text>
                     <Picker
                         selectedValue={plan}
-                        onValueChange={(itemValue) => setPlan(itemValue)}
+                        onValueChange={handlePlanChange}
                         style={styles.input}
                     >
-                        <Picker.Item label="Seleccionar" value="default" />
-                        {planData.map((dog, index) => (
-                            <Picker.Item key={index} label={dog.name} value={dog.id} style={{ color: '#000' }} />
+                        {/* Mostrar un mensaje si el plan es 'default' o 'Seleccionar' */}
+                        {plan === 'Seleccionar' && (
+                            <Picker.Item label={selectedDogName} value="Seleccionar" />
+                        )}
+                        {/* Resto de los planes alimenticios */}
+                        {planData.map((item, index) => (
+                            <Picker.Item key={index} label={item.dogName} value={item.planId} style={{ color: '#000' }} />
                         ))}
                     </Picker>
-
                 </View>
 
 

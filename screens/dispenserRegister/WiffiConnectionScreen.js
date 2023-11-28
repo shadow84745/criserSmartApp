@@ -120,7 +120,8 @@ const WiffiConnectionScreen = () => {
           isWEP: false,
           isHidden: false,
           food_capacity: 0,
-          water_capacity: 0
+          water_capacity: 0,
+          food_plan_ref: "default"
         });
 
         console.log("Dispositivo registrado exitosamente");
