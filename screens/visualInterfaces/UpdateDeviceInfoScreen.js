@@ -119,6 +119,10 @@ const UpdateDeviceInfoScreen = () => {
             setModalVisible(true)
             const docRef = doc(db, 'devices', deviceID);
 
+            const registeredDevicesRef = collection(db, "registeredDevices");
+            const registeredDevicesQuery = query(registeredDevicesRef, where("deviceSerial", "==", deviceSerial));
+            const registeredDevicesQuerySnapshot = await getDocs(registeredDevicesQuery);
+
             const updatedData = {}; // Crear un objeto para almacenar los datos actualizados
 
             if (deviceSerial !== "") {
@@ -135,6 +139,15 @@ const UpdateDeviceInfoScreen = () => {
                 updatedData.food_plan_ref = plan;
             } else {
                 updatedData.food_plan_ref = userData.food_plan_ref;
+            }
+
+            // Inicializa la variable para almacenar la URL de la imagen
+
+            if (registeredDevicesQuerySnapshot.size > 0) {
+                registeredDevicesQuerySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    updatedData.image = data.image; // Recupera la URL de la imagen
+                });
             }
 
 
