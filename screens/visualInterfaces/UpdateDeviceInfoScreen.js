@@ -162,7 +162,7 @@ const UpdateDeviceInfoScreen = () => {
             }, 1500);
             setModalVisible(false);
 
-        } catch (error) {
+        } catch (error) { 
             setModalVisible(false);
             console.error('Error al subir datos a Firestore:', error);
         }

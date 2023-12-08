@@ -12,6 +12,7 @@ import DeviceInfo from 'react-native-device-info';
 
 
 
+
 const WiffiConnectionScreen = () => {
   const [wifiList, setWifiList] = useState([]);
   const [selectedWifi, setSelectedWifi] = useState(null);
@@ -121,7 +122,11 @@ const WiffiConnectionScreen = () => {
           isHidden: false,
           food_capacity: 0,
           water_capacity: 0,
-          food_plan_ref: "default"
+          food_plan_ref: "default",
+          openMotor: false,
+          measureFood: false,
+          measureWater: false,
+          dispenseWater: false
         });
 
         console.log("Dispositivo registrado exitosamente");
