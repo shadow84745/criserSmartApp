@@ -1,4 +1,4 @@
-import React, { Linking, useState, useEffect } from 'react';
+import React, { Linking, useState, useEffect, useContext } from 'react';
 import { ActivityIndicator, Image, StyleSheet, View, Text, FlatList, TextInput, Button, PermissionsAndroid, TouchableOpacity, SafeAreaView, Modal } from 'react-native';
 import WifiManager from 'react-native-wifi-reborn';
 import { initializeApp } from 'firebase/app';
@@ -9,6 +9,8 @@ import { device_name, id_device, image, serial_device } from './NewDispenserScre
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import DeviceInfo from 'react-native-device-info';
+import { BleContext } from './hooks/BleContext';
+
 
 
 
@@ -101,7 +103,7 @@ const WiffiConnectionScreen = () => {
       setModalVisible(false)
       setModal2Visible(true);
 
-
+      sendWifiCredentialsToBleDevice();
 
       try {
         setModalVisible(true);
@@ -183,6 +185,29 @@ const WiffiConnectionScreen = () => {
       </View>
     </TouchableOpacity>
   );
+
+
+  const { connectedDevice, serviceUUID, characteristicUUID } = useContext(BleContext);
+
+  const sendWifiCredentialsToBleDevice = async (ssid, password) => {
+    if (!connectedDevice || !serviceUUID || !characteristicUUID) {
+      console.log('Dispositivo BLE no conectado o UUIDs no disponibles');
+      return;
+    }
+  
+    const wifiCredentials = `SSID:${ssid};PASSWORD:${password}`;
+    try {
+      await connectedDevice.writeCharacteristicWithResponseForService(
+        serviceUUID,
+        characteristicUUID,
+        Buffer.from(wifiCredentials, 'utf-8').toString('base64')
+      );
+      console.log('Credenciales WiFi enviadas');
+    } catch (error) {
+      console.error('Error al enviar credenciales WiFi:', error);
+    }
+  };
+
 
   return (
 

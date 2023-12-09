@@ -23,6 +23,8 @@ import DogEatingPlanScreen from './screens/petRegister/DogEatingPlanScreen';
 import UpdateDogInfoScreen from './screens/visualInterfaces/UpdateDogInfoScreen';
 import UpdateDeviceInfoScreen from './screens/visualInterfaces/UpdateDeviceInfoScreen';
 import NetInfo from '@react-native-community/netinfo';
+import ScanBleScreen from './screens/dispenserRegister/ScanBleScreen';
+import { BleProvider } from './screens/dispenserRegister/hooks/BleContext';
 
 
 const Stack = createNativeStackNavigator();
@@ -56,6 +58,7 @@ export default function App() {
 
   return (
     <>
+      <BleProvider>
       <SafeAreaView style={{ flex: 1 }}>
         <NavigationContainer>
           <Stack.Navigator>
@@ -69,6 +72,7 @@ export default function App() {
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
             <Stack.Screen name="NewDispenser" component={NewDispenserScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ConnectionDispenser" component={ConnectionDispenser} options={{ headerShown: false }} />
+            <Stack.Screen name="ScanBleDevice" component={ScanBleScreen} options={{ headerShown: false }} />
             <Stack.Screen name="WiffiConnection" component={WiffiConnection} options={{ headerShown: false }} />
             <Stack.Screen name="DispenserTest" component={DispenserTest} options={{ headerShown: false }} />
             <Stack.Screen name="DeviceRegister" component={DeviceRegister} options={{ headerShown: false }} />
@@ -86,6 +90,7 @@ export default function App() {
         isVisible={!isConnected || !isInternetReachable}
         message={!isConnected ? "No hay conexión a Internet" : "Conexión a Internet débil"}
       />
+      </BleProvider>
     </>
   );
 }

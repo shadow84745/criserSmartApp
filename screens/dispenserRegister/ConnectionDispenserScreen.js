@@ -26,82 +26,9 @@ const ConnectionDispenserScreen = () => {
 
   const navigation = useNavigation();
 
-
-
   const [isButtonVisible, setIsButtonVisible] = useState(false);
   const [isDevicePaired, setIsDevicePaired] = useState(false);
 
-  const [devices, setDevices] = useState([]);
-  const [isScanning, setIsScanning] = useState(false);
-
-  const foundDevicesRef = useRef(new Set()); // Using a ref to keep track of found devices
-
-
-  const handleScan = () => {
-    if (isScanning) {
-      manager.stopDeviceScan();
-      setIsScanning(false);
-      console.log('Scanning stopped');
-      return;
-    }
-
-    requestPermissions().then((permissionsGranted) => {
-      if (permissionsGranted) {
-        setIsScanning(true);
-        setDevices([]);
-        foundDevicesRef.current.clear();
-
-        manager.startDeviceScan(null, null, (error, device) => {
-          if (error) {
-            console.log(error);
-            setIsScanning(false); // Stop scanning on error
-            return;
-          }
-
-          if (device && device.name && !foundDevicesRef.current.has(device.id)) {
-            foundDevicesRef.current.add(device.id);
-            setDevices((prevDevices) => [...prevDevices, device]);
-          }
-        });
-
-        // Stop scanning after 10 seconds
-        setTimeout(() => {
-          manager.stopDeviceScan();
-          setIsScanning(false);
-        }, 10000);
-      } else {
-        console.log('Permissions not granted');
-      }
-    });
-  };
-
-  const connectToDevice = (device) => {
-    console.log(`Intentando conectarse a ${device.name}`);
-    manager.connectToDevice(device.id)
-      .then((connectedDevice) => {
-        console.log(`Conectado a ${connectedDevice.name}`);
-        return connectedDevice.discoverAllServicesAndCharacteristics();
-      })
-      .then((device) => {
-        return device.services();  // Solicita los servicios del dispositivo
-      })
-      .then((services) => {
-        console.log('Servicios encontrados:', services);
-        // Aquí puedes llamar a device.characteristicsForService(service.uuid) para cada servicio
-        return Promise.all(services.map(service => service.characteristics()));
-      })
-      .then(characteristicsArray => {
-        // characteristicsArray es un array de arrays, cada uno correspondiente a un servicio
-        characteristicsArray.forEach(characteristics => {
-          console.log('Características encontradas:', characteristics);
-          // Aquí puedes procesar o guardar las características para usar más adelante
-        });
-      })
-      .catch((error) => {
-        console.error(`Error al conectar o leer: ${error}`);
-      });
-  };
-  
 
 
   const handleContactSupport = () => {
@@ -113,26 +40,8 @@ const ConnectionDispenserScreen = () => {
   };
 
 
-  /*const connectToDevice = (deviceId) => {
-    BleManager.connect(deviceId)
-      .then(() => {
-        console.log('Connected to ' + deviceId);
-        setIsDevicePaired(true);
-      })
-      .catch((error) => {
-        console.error('Connection error', error);
-      });
-  };*/
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.deviceContainer}
-      onPress={() => connectToDevice(item)}
-    >
-      <Text style={styles.deviceText}>{item.name || 'Dispositivo sin nombre'}</Text>
-    </TouchableOpacity>
-  );
-  
-  
+
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -158,17 +67,6 @@ const ConnectionDispenserScreen = () => {
               />
             </View>
           </View>
-        </View>
-
-        <View style={styles.section}>
-          <FlatList
-            data={devices}
-            renderItem={renderItem}
-            keyExtractor={item => item.id}
-          />
-          <TouchableOpacity style={styles.scanButton} onPress={handleScan}>
-            <Text style={styles.scanButtonText}>{isScanning ? 'Scanning...' : 'Scan for Devices'}</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -227,7 +125,7 @@ const ConnectionDispenserScreen = () => {
               </View>
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('WiffiConnection')}
+                  onPress={() => navigation.navigate('ScanBleDevice')}
                   style={styles.button}
                 >
                   <Text style={styles.buttonText}>Paso siguiente</Text>
