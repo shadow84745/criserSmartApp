@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, getReactNativePersistence } from 'firebase/auth';
 import DeviceInfo from 'react-native-device-info';
 import { BleContext } from './hooks/BleContext';
+import { Buffer } from 'buffer';
 
 
 
@@ -208,7 +209,34 @@ const WiffiConnectionScreen = () => {
     }
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkBleConnection();
+    }, 5000); // Verifica la conexión cada 5 segundos
 
+    return () => clearInterval(interval); // Limpia el intervalo al salir de la pantalla
+  }, [connectedDevice, serviceUUID, characteristicUUID]);
+
+
+  const checkBleConnection = async () => {
+    if (!connectedDevice || !serviceUUID || !characteristicUUID) {
+      console.log('Dispositivo BLE no conectado o UUIDs no disponibles');
+      return false;
+    }
+
+    try {
+      // Intenta leer una característica; si tiene éxito, aún estás conectado
+      await connectedDevice.readCharacteristicForService(serviceUUID, characteristicUUID);
+      console.log('Aún conectado al dispositivo BLE');
+      return true;
+    } catch (error) {
+      console.error('Perdida de conexión BLE:', error);
+      return false;
+    }
+  };
+
+
+  
   return (
 
     <SafeAreaView style={styles.container}>

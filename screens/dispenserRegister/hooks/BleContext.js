@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState } from 'react';
 import { BleManager } from 'react-native-ble-plx';
 
 export const BleContext = createContext();

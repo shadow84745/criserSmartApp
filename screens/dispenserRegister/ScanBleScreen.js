@@ -2,6 +2,7 @@ import React, { useContext, useRef, useState } from 'react';
 import { PermissionsAndroid, Linking, StyleSheet, Text, TouchableOpacity, View, Image, SafeAreaView, FlatList, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { BleContext } from './hooks/BleContext';
+import { Buffer } from 'buffer';
 
 
 
@@ -77,46 +78,42 @@ const ScanBleScreen = () => {
 
   const connectToDevice = async (device) => {
     try {
-      console.log(`Intentando conectarse a ${device.name}`);
-      const connectedDevice = await manager.connectToDevice(device.id);
-      console.log(`Conectado a ${connectedDevice.name}`);
+        console.log(`Intentando conectarse a ${device.name}`);
+        const connectedDevice = await manager.connectToDevice(device.id);
+        console.log(`Conectado a ${connectedDevice.name}`);
 
-      const discoveredDevice = await connectedDevice.discoverAllServicesAndCharacteristics();
-      const services = await discoveredDevice.services();
+        const discoveredDevice = await connectedDevice.discoverAllServicesAndCharacteristics();
+        const services = await discoveredDevice.services();
 
-      console.log('Servicios encontrados:', services);
-      let characteristicsArray = [];
-      for (const service of services) {
-        const characteristics = await service.characteristics();
-        characteristicsArray.push(...characteristics);
-      }
+        let characteristicsArray = [];
+        for (const service of services) {
+            const characteristics = await service.characteristics();
+            characteristicsArray.push(...characteristics);
+        }
 
-      console.log('Características encontradas:', characteristicsArray);
-
-      if (services.length > 0 && characteristicsArray.length > 0) {
         const serviceUuid = services[2].uuid;
         const characteristicUuid = characteristicsArray[4].uuid;
         setServiceUUID(serviceUuid);
         setCharacteristicUUID(characteristicUuid);
 
-        console.log('Service UUID:', serviceUuid);
-        console.log('Characteristic UUID:', characteristicUuid);
-      }
+        // Enviar los datos justo después de conectarse
+        const wifiCredentials = `SSID:tu_ssid;PASSWORD:tu_contraseña`;
+        await connectedDevice.writeCharacteristicWithResponseForService(
+            serviceUuid,
+            characteristicUuid,
+            Buffer.from(wifiCredentials, 'utf-8').toString('base64')
+        );
 
-      // Aquí puedes procesar o guardar las características para usar más adelante
-      setError("")
-      setConnectedDevice(connectedDevice);
-      setSuccessMessage("Conectado con exito")
-      // Aquí deberías establecer también los UUIDs de los servicios y características
-      setTimeout(() => {
-        setSuccessMessage('');
-        navigation.navigate('WiffiConnection');
-      }, 3000);
+        setError("");
+        setConnectedDevice(connectedDevice);
+        setSuccessMessage("Conectado con éxito y datos enviados");
+
     } catch (error) {
-      console.error(`Error al conectar o leer: ${error}`);
-      setError('No se pudo conectar a este dispositivo');
+        console.error(`Error al conectar o leer: ${error}`);
+        setError('No se pudo conectar a este dispositivo');
     }
-  };
+};
+
 
 
   const handleContactSupport = () => {
